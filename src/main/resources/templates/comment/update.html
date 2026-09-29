@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('댓글 수정')}"></head>
+<body>
+	<header th:replace="~{fragments/layout :: header}"></header>
+	<main id="main-content" class="shell page form-page">
+		<div class="page-heading">
+			<span class="eyebrow">YOUR STORY</span>
+			<h1>댓글 수정</h1>
+			<p>남겨주신 이야기를 수정할 수 있어요.</p>
+		</div>
+		<form class="panel form-stack" th:action="@{/comment/update}"
+			th:object="${commentDTO}" method="post">
+			<input type="hidden" name="commentId" th:value="${commentId}"><input
+				type="hidden" name="classId" th:value="${classId}">
+			<div class="field">
+				<label for="content">내용</label>
+				<textarea class="form-control" th:field="*{content}"
+					th:errorclass="is-invalid" rows="8" maxlength="1000" required
+					aria-describedby="content-error" placeholder="나누고 싶은 이야기를 작성해주세요."></textarea>
+				<p id="content-error" class="field-error"
+					th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></p>
+				<p class="form-help">최대 1,000자까지 작성할 수 있어요.</p>
+			</div>
+			<div class="form-actions">
+				<a class="btn btn-outline"
+					th:href="@{/class/detail(classId=${classId})}">취소</a>
+				<button class="btn btn-primary" type="submit">수정 완료</button>
+			</div>
+		</form>
+	</main>
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
+

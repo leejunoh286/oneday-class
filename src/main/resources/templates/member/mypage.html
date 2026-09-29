@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('마이페이지')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/layout :: header}"></header>
+
+
+<main id="main-content"
+      class="shell page">
+
+
+    <!-- =====================================================
+         프로필 영역
+         ===================================================== -->
+    <section class="panel profile-panel">
+
+        <div class="profile-info">
+
+            <div class="profile-avatar"
+                 aria-hidden="true">
+                ✦
+            </div>
+
+            <div>
+
+                <span class="eyebrow">
+                    MY DAY
+                </span>
+
+                <h1>
+                    <span th:text="${nickname}"></span>님의 하루
+                </h1>
+
+                <p>
+                    회원 #
+                    <span th:text="${loginMemberId}"></span>
+                    · 함께한 경험을 한곳에서 확인하세요.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- 회원정보 수정 + 비밀번호 변경 + 새 클래스 개설 -->
+        <div class="actions">
+
+            <a class="btn btn-outline"
+               th:href="@{/member/edit}">
+                회원정보 수정
+            </a>
+
+            <a class="btn btn-outline"
+               th:href="@{/member/password}">
+                비밀번호 변경
+            </a>
+
+            <a class="btn btn-primary"
+               th:href="@{/class/register}">
+                새 클래스 개설 ↗
+            </a>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         내가 개설한 클래스
+         ===================================================== -->
+    <section aria-labelledby="opened-title">
+
+        <div class="section-heading">
+
+            <div>
+
+                <h2 id="opened-title">
+
+                    내가 개설한 클래스
+
+                    <span class="count-label"
+                          th:text="${#lists.size(openedClassList)}">
+                    </span>
+
+                </h2>
+
+                <p>
+                    나의 취미를 나누는 하루
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- 개설 클래스 없음 -->
+        <div class="empty-state"
+             th:if="${#lists.isEmpty(openedClassList)}">
+
+            <span class="empty-symbol"
+                  aria-hidden="true">
+                +
+            </span>
+
+            <h3>
+                첫 클래스를 열어보세요
+            </h3>
+
+            <p>
+                나누고 싶은 취미가 있나요?
+                새로운 만남을 시작해보세요.
+            </p>
+
+            <a class="btn btn-soft"
+               th:href="@{/class/register}">
+                클래스 개설하기
+            </a>
+
+        </div>
+
+
+        <!-- 개설 클래스 목록 -->
+        <div class="panel table-panel"
+             th:unless="${#lists.isEmpty(openedClassList)}">
+
+            <table class="responsive-table">
+
+                <caption class="visually-hidden">
+                    내가 개설한 클래스 목록
+                </caption>
+
+                <thead>
+
+                    <tr>
+                        <th>클래스</th>
+                        <th>일정</th>
+                        <th>장소</th>
+                        <th>상태</th>
+                        <th>관리</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    <tr th:each="item : ${openedClassList}">
+
+                        <td data-label="클래스">
+
+                            <div>
+
+                                <a class="table-title"
+                                   th:href="@{/class/detail(classId=${item.classId})}"
+                                   th:text="${item.title}">
+                                </a>
+
+                                <small class="table-meta">
+                                    클래스 #
+                                    <span th:text="${item.classId}">
+                                    </span>
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="일정">
+
+                            <div>
+
+                                <span th:text="${#temporals.format(
+                                        item.classDate,
+                                        'yyyy. MM. dd. HH:mm')}">
+                                </span>
+
+                                <small class="table-meta">
+
+                                    마감
+
+                                    <span th:text="${#temporals.format(
+                                            item.deadline,
+                                            'MM. dd. HH:mm')}">
+                                    </span>
+
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="장소"
+                            th:text="${item.location}">
+                        </td>
+
+
+                        <td data-label="상태">
+
+                            <div>
+
+                                <span th:replace="~{
+                                    fragments/components
+                                    :: classStatus(${item.status})
+                                }">
+                                </span>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="관리">
+
+                            <a class="btn btn-soft btn-sm"
+                               th:href="@{/class/application/manage(
+                                    classId=${item.classId}
+                               )}">
+
+                                신청자 관리
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         내가 신청한 클래스
+         ===================================================== -->
+    <section class="section"
+             aria-labelledby="applied-title">
+
+        <div class="section-heading">
+
+            <div>
+
+                <h2 id="applied-title">
+
+                    내가 신청한 클래스
+
+                    <span class="count-label"
+                          th:text="${#lists.size(appliedClassList)}">
+                    </span>
+
+                </h2>
+
+                <p>
+                    새로운 취미와 만나는 하루
+                </p>
+
+            </div>
+
+
+            <a class="text-link"
+               th:href="@{/class/list}">
+                클래스 찾기 ↗
+            </a>
+
+        </div>
+
+
+        <!-- 신청 클래스 없음 -->
+        <div class="empty-state"
+             th:if="${#lists.isEmpty(appliedClassList)}">
+
+            <span class="empty-symbol"
+                  aria-hidden="true">
+                ✦
+            </span>
+
+            <h3>
+                어떤 취미를 시작해볼까요?
+            </h3>
+
+            <p>
+                마음에 드는 클래스를 찾아
+                새로운 하루를 만들어보세요.
+            </p>
+
+            <a class="btn btn-soft"
+               th:href="@{/class/list}">
+                클래스 둘러보기
+            </a>
+
+        </div>
+
+
+        <!-- 신청 클래스 목록 -->
+        <div class="panel table-panel"
+             th:unless="${#lists.isEmpty(appliedClassList)}">
+
+            <table class="responsive-table">
+
+                <caption class="visually-hidden">
+                    내가 신청한 클래스 목록
+                </caption>
+
+                <thead>
+
+                    <tr>
+                        <th>클래스</th>
+                        <th>진행 일시 / 장소</th>
+                        <th>클래스 상태</th>
+                        <th>내 신청 상태</th>
+                        <th>상세</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    <tr th:each="item : ${appliedClassList}">
+
+                        <td data-label="클래스">
+
+                            <div>
+
+                                <a class="table-title"
+                                   th:href="@{/class/detail(
+                                        classId=${item.classId}
+                                   )}"
+                                   th:text="${item.title}">
+                                </a>
+
+
+                                <small class="table-meta">
+
+                                    신청 #
+
+                                    <span th:text="${item.applicationId}">
+                                    </span>
+
+                                    ·
+
+                                    <span th:text="${#temporals.format(
+                                            item.appliedAt,
+                                            'yyyy. MM. dd.'
+                                    )}">
+                                    </span>
+
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="일정 / 장소">
+
+                            <div>
+
+                                <span th:text="${#temporals.format(
+                                        item.classDate,
+                                        'yyyy. MM. dd. HH:mm'
+                                )}">
+                                </span>
+
+
+                                <small class="table-meta"
+                                       th:text="${item.location}">
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="클래스 상태">
+
+                            <div>
+
+                                <span th:replace="~{
+                                    fragments/components
+                                    :: classStatus(${item.classStatus})
+                                }">
+                                </span>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="내 신청 상태">
+
+                            <div>
+
+                                <span th:replace="~{
+                                    fragments/components
+                                    :: applicationStatus(
+                                        ${item.applicationStatus}
+                                    )
+                                }">
+                                </span>
+
+                            </div>
+
+                        </td>
+
+
+                        <td data-label="상세">
+
+                            <a class="btn btn-outline btn-sm"
+                               th:href="@{/class/detail(
+                                    classId=${item.classId}
+                               )}">
+                                상세보기
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         회원 탈퇴
+         ===================================================== -->
+    <section class="section"
+             aria-labelledby="withdraw-title">
+
+        <div class="section-heading">
+
+            <div>
+
+                <h2 id="withdraw-title">
+                    회원 탈퇴
+                </h2>
+
+                <p>
+                    ActiveOn 계정을 더 이상 사용하지 않을 경우
+                    탈퇴할 수 있습니다.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <p>
+                진행 중인 클래스가 있는 경우에는
+                회원탈퇴를 할 수 없습니다.
+            </p>
+
+
+            <p class="muted">
+                탈퇴 시 진행 중인 신청은 취소 처리되며,
+                기존 활동 기록은 서비스 기록 보존을 위해
+                일부 유지될 수 있습니다.
+            </p>
+
+
+            <!-- 탈퇴 실패 메시지 -->
+            <p th:if="${withdrawError}"
+               th:text="${withdrawError}"
+               style="
+                    color:#dc3545;
+                    font-weight:600;
+                    margin-top:16px;
+               ">
+            </p>
+
+
+            <form th:action="@{/member/withdraw}"
+                  method="post"
+                  onsubmit="
+                    return confirm(
+                        '정말 회원탈퇴 하시겠습니까?'
+                    );
+                  ">
+
+                <button type="submit"
+                        class="btn btn-danger">
+
+                    회원탈퇴
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+<footer th:replace="~{
+    fragments/layout :: footer
+}">
+</footer>
+
+
+</body>
+</html>

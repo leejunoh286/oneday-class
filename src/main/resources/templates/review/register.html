@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('수강 후기 작성')}"></head>
+<body>
+	<header th:replace="~{fragments/layout :: header}"></header>
+	<main id="main-content" class="shell page form-page">
+		<div class="page-heading">
+			<span class="eyebrow">YOUR EXPERIENCE</span>
+			<h1>수강 후기 작성</h1>
+			<p>함께한 하루는 어땠나요? 솔직한 경험을 들려주세요.</p>
+		</div>
+		<form class="panel form-stack" th:action="@{/review/register}"
+			th:object="${reviewRegisterDTO}" method="post">
+			<input type="hidden" name="classId" th:value="${classId}">
+			<div class="field">
+				<label for="rating">평점</label><select class="form-select"
+					th:field="*{rating}" th:errorclass="is-invalid" required
+					aria-describedby="rating-error"><option value="">평점을
+						선택해주세요</option>
+					<option value="5">★★★★★ · 5점</option>
+					<option value="4">★★★★☆ · 4점</option>
+					<option value="3">★★★☆☆ · 3점</option>
+					<option value="2">★★☆☆☆ · 2점</option>
+					<option value="1">★☆☆☆☆ · 1점</option></select>
+				<p class="field-error" id="rating-error"
+					th:if="${#fields.hasErrors('rating')}" th:errors="*{rating}"></p>
+			</div>
+			<div class="field">
+				<label for="content">내용</label>
+				<textarea class="form-control" th:field="*{content}"
+					th:errorclass="is-invalid" rows="8" maxlength="1000" required
+					aria-describedby="content-error" placeholder="나누고 싶은 이야기를 작성해주세요."></textarea>
+				<p id="content-error" class="field-error"
+					th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></p>
+				<p class="form-help">최대 1,000자까지 작성할 수 있어요.</p>
+			</div>
+			<div class="form-actions">
+				<a class="btn btn-outline"
+					th:href="@{/class/detail(classId=${classId})}">취소</a>
+				<button class="btn btn-primary" type="submit">후기 등록</button>
+			</div>
+		</form>
+	</main>
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
+

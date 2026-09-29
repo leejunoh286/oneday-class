@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.onedayclass.mapper.AdminMapper">
+
+
+    <!-- =====================================================
+         기본 통계
+         ===================================================== -->
+
+    <select id="countMembers"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM member
+
+    </select>
+
+
+    <select id="countClasses"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_post
+
+    </select>
+
+
+    <select id="countApplications"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_application
+
+    </select>
+
+
+    <select id="countComments"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM comment
+
+    </select>
+
+
+    <select id="countReviews"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM review
+
+    </select>
+
+
+
+    <!-- =====================================================
+         클래스 상태별 통계
+         ===================================================== -->
+
+    <select id="countClassesByStatus"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_post
+        WHERE status = #{status}
+
+    </select>
+
+
+
+    <!-- =====================================================
+         신청 상태별 통계
+         ===================================================== -->
+
+    <select id="countApplicationsByStatus"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_application
+        WHERE status = #{status}
+
+    </select>
+
+
+
+    <!-- =====================================================
+         회원 검색 + 필터 + 페이징
+         ===================================================== -->
+
+    <select id="selectMembers"
+            resultType="kr.or.oti.onedayclass.vo.MemberVO">
+
+        SELECT
+            member_id AS memberId,
+            role_id AS roleId,
+            login_id AS loginId,
+            password,
+            name,
+            nickname,
+            email,
+            phone,
+            withdrawn,
+            withdrawn_at AS withdrawnAt,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+
+        FROM member
+
+        <where>
+
+            <if test="keyword != null and keyword != ''">
+
+                AND (
+                    login_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR name LIKE CONCAT('%', #{keyword}, '%')
+                    OR nickname LIKE CONCAT('%', #{keyword}, '%')
+                    OR email LIKE CONCAT('%', #{keyword}, '%')
+                )
+
+            </if>
+
+
+            <if test="withdrawn != null">
+
+                AND withdrawn = #{withdrawn}
+
+            </if>
+
+
+            <if test="roleId != null">
+
+                AND role_id = #{roleId}
+
+            </if>
+
+        </where>
+
+        ORDER BY member_id DESC
+
+        LIMIT #{size}
+        OFFSET #{offset}
+
+    </select>
+
+
+
+    <!-- 회원 검색 결과 전체 개수 -->
+    <select id="countMembersForAdmin"
+            resultType="int">
+
+        SELECT COUNT(*)
+
+        FROM member
+
+        <where>
+
+            <if test="keyword != null and keyword != ''">
+
+                AND (
+                    login_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR name LIKE CONCAT('%', #{keyword}, '%')
+                    OR nickname LIKE CONCAT('%', #{keyword}, '%')
+                    OR email LIKE CONCAT('%', #{keyword}, '%')
+                )
+
+            </if>
+
+
+            <if test="withdrawn != null">
+
+                AND withdrawn = #{withdrawn}
+
+            </if>
+
+
+            <if test="roleId != null">
+
+                AND role_id = #{roleId}
+
+            </if>
+
+        </where>
+
+    </select>
+
+
+
+    <!-- 회원 1명 조회 -->
+    <select id="selectMemberById"
+            resultType="kr.or.oti.onedayclass.vo.MemberVO">
+
+        SELECT
+            member_id AS memberId,
+            role_id AS roleId,
+            login_id AS loginId,
+            password,
+            name,
+            nickname,
+            email,
+            phone,
+            withdrawn,
+            withdrawn_at AS withdrawnAt,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+
+        FROM member
+
+        WHERE member_id = #{memberId}
+
+    </select>
+
+
+
+    <!-- 회원 권한 변경 -->
+    <update id="updateMemberRole">
+
+        UPDATE member
+        SET
+            role_id = #{roleId},
+            updated_at = NOW()
+
+        WHERE member_id = #{memberId}
+          AND withdrawn = 0
+
+    </update>
+
+
+
+    <!-- =====================================================
+         클래스 검색 + 필터 + 페이징
+         ===================================================== -->
+
+    <select id="selectClasses"
+            resultType="kr.or.oti.onedayclass.vo.ClassVO">
+
+        SELECT
+            cp.class_id AS classId,
+            cp.host_id AS hostId,
+            cp.category_id AS categoryId,
+            cp.title,
+            cp.description,
+            cp.price,
+            cp.capacity,
+            cp.class_date AS classDate,
+            cp.deadline,
+            cp.location,
+            cp.status,
+            cp.view_count AS viewCount,
+            cp.created_at AS createdAt,
+            cp.updated_at AS updatedAt,
+
+            m.login_id AS hostLoginId,
+            m.nickname AS hostNickname
+
+        FROM class_post cp
+
+        LEFT JOIN member m
+            ON cp.host_id = m.member_id
+
+        <where>
+
+            <if test="keyword != null and keyword != ''">
+
+                AND (
+                    cp.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR cp.location LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.login_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.nickname LIKE CONCAT('%', #{keyword}, '%')
+                )
+
+            </if>
+
+
+            <if test="status != null and status != ''">
+
+                AND cp.status = #{status}
+
+            </if>
+
+        </where>
+
+        ORDER BY cp.class_id DESC
+
+        LIMIT #{size}
+        OFFSET #{offset}
+
+    </select>
+
+
+
+    <!-- 클래스 검색 결과 전체 개수 -->
+    <select id="countClassesForAdmin"
+            resultType="int">
+
+        SELECT COUNT(*)
+
+        FROM class_post cp
+
+        LEFT JOIN member m
+            ON cp.host_id = m.member_id
+
+        <where>
+
+            <if test="keyword != null and keyword != ''">
+
+                AND (
+                    cp.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR cp.location LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.login_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.nickname LIKE CONCAT('%', #{keyword}, '%')
+                )
+
+            </if>
+
+
+            <if test="status != null and status != ''">
+
+                AND cp.status = #{status}
+
+            </if>
+
+        </where>
+
+    </select>
+
+
+
+    <!-- 클래스 1개 조회 -->
+    <select id="selectClassById"
+            resultType="kr.or.oti.onedayclass.vo.ClassVO">
+
+        SELECT
+            class_id AS classId,
+            host_id AS hostId,
+            category_id AS categoryId,
+            title,
+            description,
+            price,
+            capacity,
+            class_date AS classDate,
+            deadline,
+            location,
+            status,
+            view_count AS viewCount,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+
+        FROM class_post
+
+        WHERE class_id = #{classId}
+
+    </select>
+
+
+
+    <!-- 클래스 상태 변경 -->
+    <update id="updateClassStatus">
+
+        UPDATE class_post
+        SET
+            status = #{status},
+            updated_at = NOW()
+
+        WHERE class_id = #{classId}
+
+    </update>
+
+
+
+    <!-- =====================================================
+         관리자 클래스 강제 삭제
+         ===================================================== -->
+
+    <delete id="deleteReviewsByClassId">
+
+        DELETE FROM review
+        WHERE class_id = #{classId}
+
+    </delete>
+
+
+    <delete id="deleteCommentsByClassId">
+
+        DELETE FROM comment
+        WHERE class_id = #{classId}
+
+    </delete>
+
+
+    <delete id="deleteApplicationsByClassId">
+
+        DELETE FROM class_application
+        WHERE class_id = #{classId}
+
+    </delete>
+
+
+    <delete id="deleteImagesByClassId">
+
+        DELETE FROM class_image
+        WHERE class_id = #{classId}
+
+    </delete>
+
+
+    <delete id="deleteClassById">
+
+        DELETE FROM class_post
+        WHERE class_id = #{classId}
+
+    </delete>
+
+
+</mapper>

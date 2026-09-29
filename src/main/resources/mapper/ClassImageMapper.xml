@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.onedayclass.mapper.ClassImageMapper">
+
+
+    <!--
+        이미지 등록
+    -->
+    <insert id="insertClassImage"
+            parameterType="kr.or.oti.onedayclass.vo.ClassImageVO"
+            useGeneratedKeys="true"
+            keyProperty="imageId">
+
+        INSERT INTO class_image
+        (
+            class_id,
+            image_url,
+            sort_order,
+            is_thumbnail
+        )
+        VALUES
+        (
+            #{classId},
+            #{imageUrl},
+            #{sortOrder},
+            #{thumbnail}
+        )
+
+    </insert>
+    
+    
+    <select id="selectNextSortOrder"
+	        parameterType="long"
+	        resultType="int">
+	
+	    SELECT COALESCE(MAX(sort_order), -1) + 1
+	    FROM class_image
+	    WHERE class_id = #{classId}
+
+	</select>
+
+
+	<select id="countImagesByClassId"
+	        parameterType="long"
+	        resultType="int">
+	
+	    SELECT COUNT(*)
+	    FROM class_image
+	    WHERE class_id = #{classId}
+	
+	</select>
+
+
+    <!--
+        클래스별 이미지 전체 조회
+    -->
+    <select id="selectImagesByClassId"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassImageVO">
+
+        SELECT
+            image_id       AS imageId,
+            class_id       AS classId,
+            image_url      AS imageUrl,
+            sort_order     AS sortOrder,
+            is_thumbnail   AS thumbnail,
+            created_at     AS createdAt
+        FROM class_image
+        WHERE class_id = #{classId}
+        ORDER BY is_thumbnail DESC,
+         		 sort_order ASC
+
+    </select>
+
+
+    <!--
+        이미지 1개 조회
+    -->
+    <select id="selectImageById"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassImageVO">
+
+        SELECT
+            image_id       AS imageId,
+            class_id       AS classId,
+            image_url      AS imageUrl,
+            sort_order     AS sortOrder,
+            is_thumbnail   AS thumbnail,
+            created_at     AS createdAt
+        FROM class_image
+        WHERE image_id = #{imageId}
+
+    </select>
+
+
+    <!--
+        클래스 대표 이미지 조회
+    -->
+    <select id="selectThumbnailByClassId"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassImageVO">
+
+        SELECT
+            image_id       AS imageId,
+            class_id       AS classId,
+            image_url      AS imageUrl,
+            sort_order     AS sortOrder,
+            is_thumbnail   AS thumbnail,
+            created_at     AS createdAt
+        FROM class_image
+        WHERE class_id = #{classId}
+          AND is_thumbnail = 1
+        ORDER BY sort_order ASC
+        LIMIT 1
+
+    </select>
+
+
+    <!--
+        이미지 1개 삭제
+    -->
+    <delete id="deleteImage">
+
+        DELETE FROM class_image
+        WHERE image_id = #{imageId}
+
+    </delete>
+
+
+    <!--
+        클래스 이미지 전체 삭제
+    -->
+    <delete id="deleteImagesByClassId">
+
+        DELETE FROM class_image
+        WHERE class_id = #{classId}
+
+    </delete>
+    
+    
+    <update id="clearThumbnail"
+	        parameterType="long">
+	
+	    UPDATE class_image
+	    SET is_thumbnail = 0
+	    WHERE class_id = #{classId}
+
+	</update>
+
+
+	<update id="setThumbnail"
+	        parameterType="long">
+	
+	    UPDATE class_image
+	    SET is_thumbnail = 1
+	    WHERE image_id = #{imageId}
+	
+	</update>
+
+
+</mapper>

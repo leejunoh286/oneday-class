@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('클래스 관리')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/layout :: header}"></header>
+
+
+<main id="main-content"
+      class="shell page">
+
+
+    <!-- =====================================================
+         페이지 제목
+         ===================================================== -->
+    <section class="panel">
+
+        <span class="eyebrow">
+            ADMIN
+        </span>
+
+        <h1>
+            클래스 관리
+        </h1>
+
+        <p class="muted">
+            전체 클래스를 검색하고 상태 변경 및 삭제할 수 있습니다.
+        </p>
+
+
+        <div class="actions"
+             style="margin-top:16px;">
+
+            <a th:href="@{/admin}"
+               class="btn btn-outline">
+                대시보드로 돌아가기
+            </a>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         성공 메시지
+         ===================================================== -->
+    <div class="panel"
+         th:if="${successMessage}"
+         style="margin-top:20px;">
+
+        <p th:text="${successMessage}"
+           style="
+               color:#087f5b;
+               font-weight:600;
+               margin:0;
+           ">
+        </p>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         오류 메시지
+         ===================================================== -->
+    <div class="panel"
+         th:if="${errorMessage}"
+         style="margin-top:20px;">
+
+        <p th:text="${errorMessage}"
+           style="
+               color:#dc3545;
+               font-weight:600;
+               margin:0;
+           ">
+        </p>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         검색 / 필터
+         ===================================================== -->
+    <section class="panel section">
+
+        <h2>
+            클래스 검색
+        </h2>
+
+
+        <form th:action="@{/admin/class/list}"
+              method="get">
+
+
+            <div style="
+                display:grid;
+                grid-template-columns:2fr 1fr auto;
+                gap:12px;
+                align-items:end;
+                margin-top:20px;
+            ">
+
+
+                <!-- 검색어 -->
+                <div class="form-group">
+
+                    <label for="keyword">
+                        검색어
+                    </label>
+
+                    <input type="text"
+                           id="keyword"
+                           name="keyword"
+                           class="form-control"
+                           th:value="${keyword}"
+                           placeholder="제목, 장소, 개설자">
+
+                </div>
+
+
+                <!-- 상태 -->
+                <div class="form-group">
+
+                    <label for="status">
+                        클래스 상태
+                    </label>
+
+                    <select id="status"
+                            name="status"
+                            class="form-control">
+
+                        <option value="">
+                            전체
+                        </option>
+
+                        <option value="RECRUITING"
+                                th:selected="${status == 'RECRUITING'}">
+                            모집중
+                        </option>
+
+                        <option value="CLOSED"
+                                th:selected="${status == 'CLOSED'}">
+                            모집마감
+                        </option>
+
+                        <option value="COMPLETED"
+                                th:selected="${status == 'COMPLETED'}">
+                            완료
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- 버튼 -->
+                <div class="actions">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        검색
+                    </button>
+
+                    <a th:href="@{/admin/class/list}"
+                       class="btn btn-outline">
+                        초기화
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         클래스 목록
+         ===================================================== -->
+    <section class="section">
+
+
+        <div class="section-heading">
+
+            <div>
+
+                <h2>
+
+                    클래스 목록
+
+                    <span class="count-label"
+                          th:text="${totalCount}">
+                        0
+                    </span>
+
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- 검색 결과 없음 -->
+        <div class="empty-state"
+             th:if="${#lists.isEmpty(classList)}">
+
+            <h3>
+                조건에 해당하는 클래스가 없습니다.
+            </h3>
+
+        </div>
+
+
+
+        <!-- 클래스 테이블 -->
+        <div class="panel table-panel"
+             th:unless="${#lists.isEmpty(classList)}">
+
+            <table class="responsive-table">
+
+
+                <caption class="visually-hidden">
+                    관리자 클래스 목록
+                </caption>
+
+
+                <thead>
+
+                    <tr>
+                        <th>번호</th>
+                        <th>클래스</th>
+                        <th>개설자</th>
+                        <th>일정 / 장소</th>
+                        <th>상태</th>
+                        <th>관리</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                    <tr th:each="item : ${classList}">
+
+
+                        <!-- 클래스 번호 -->
+                        <td data-label="번호"
+                            th:text="${item.classId}">
+                        </td>
+
+
+                        <!-- 클래스 정보 -->
+                        <td data-label="클래스">
+
+                            <div>
+
+                                <a class="table-title"
+                                   th:href="@{/class/detail(
+                                       classId=${item.classId}
+                                   )}"
+                                   th:text="${item.title}">
+                                </a>
+
+
+                                <small class="table-meta">
+
+                                    정원
+
+                                    <span th:text="${item.capacity}">
+                                    </span>
+
+                                    명 ·
+
+                                    <span th:text="${#numbers.formatInteger(
+                                        item.price,
+                                        0,
+                                        'COMMA'
+                                    )}">
+                                    </span>
+
+                                    원
+
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- 개설자 -->
+                        <td data-label="개설자">
+
+                            <div>
+
+                                <span th:text="${item.hostNickname}">
+                                    닉네임
+                                </span>
+
+
+                                <small class="table-meta">
+
+                                    <span th:text="${item.hostLoginId}">
+                                        loginId
+                                    </span>
+
+                                    · 회원 #
+
+                                    <span th:text="${item.hostId}">
+                                        0
+                                    </span>
+
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- 일정 / 장소 -->
+                        <td data-label="일정 / 장소">
+
+                            <div>
+
+                                <span th:if="${item.classDate != null}"
+                                      th:text="${#temporals.format(
+                                          item.classDate,
+                                          'yyyy.MM.dd HH:mm'
+                                      )}">
+                                </span>
+
+
+                                <small class="table-meta"
+                                       th:text="${item.location}">
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- 상태 -->
+                        <td data-label="상태">
+
+                            <span th:replace="~{
+                                fragments/components
+                                :: classStatus(${item.status})
+                            }">
+                            </span>
+
+                        </td>
+
+
+                        <!-- 관리 -->
+                        <td data-label="관리">
+
+                            <div class="actions">
+
+
+                                <!-- 상태 변경 -->
+                                <form th:action="@{/admin/class/status}"
+                                      method="post">
+
+
+                                    <input type="hidden"
+                                           name="classId"
+                                           th:value="${item.classId}">
+
+
+                                    <select name="status"
+                                            class="form-control">
+
+                                        <option value="RECRUITING"
+                                                th:selected="${item.status == 'RECRUITING'}">
+                                            모집중
+                                        </option>
+
+                                        <option value="CLOSED"
+                                                th:selected="${item.status == 'CLOSED'}">
+                                            모집마감
+                                        </option>
+
+                                        <option value="COMPLETED"
+                                                th:selected="${item.status == 'COMPLETED'}">
+                                            완료
+                                        </option>
+
+                                    </select>
+
+
+                                    <button type="submit"
+                                            class="btn btn-outline btn-sm">
+
+                                        상태 변경
+
+                                    </button>
+
+                                </form>
+
+
+
+                                <!-- 관리자 강제 삭제 -->
+                                <form th:action="@{/admin/class/delete}"
+                                      method="post"
+                                      onsubmit="
+                                          return confirm(
+                                              '이 클래스를 삭제하면 신청, 댓글, 리뷰, 이미지도 함께 삭제됩니다. 정말 삭제하시겠습니까?'
+                                          );
+                                      ">
+
+
+                                    <input type="hidden"
+                                           name="classId"
+                                           th:value="${item.classId}">
+
+
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm">
+
+                                        삭제
+
+                                    </button>
+
+                                </form>
+
+
+
+                                <!-- 상세보기 -->
+                                <a class="btn btn-soft btn-sm"
+                                   th:href="@{/class/detail(
+                                       classId=${item.classId}
+                                   )}">
+
+                                    상세보기
+
+                                </a>
+
+
+                            </div>
+
+                        </td>
+
+
+                    </tr>
+
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+
+        <!-- =====================================================
+             페이징
+             ===================================================== -->
+        <div class="pagination"
+             th:if="${totalPages > 1}"
+             style="
+                 display:flex;
+                 justify-content:center;
+                 align-items:center;
+                 gap:8px;
+                 flex-wrap:wrap;
+                 margin-top:24px;
+             ">
+
+
+            <!-- 이전 -->
+            <a th:if="${page > 1}"
+               class="btn btn-outline btn-sm"
+               th:href="@{/admin/class/list(
+                   page=${page - 1},
+                   keyword=${keyword},
+                   status=${status}
+               )}">
+
+                이전
+
+            </a>
+
+
+
+            <!-- 페이지 번호 -->
+            <a th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+
+               th:href="@{/admin/class/list(
+                   page=${pageNumber},
+                   keyword=${keyword},
+                   status=${status}
+               )}"
+
+               th:text="${pageNumber}"
+
+               th:class="${pageNumber == page}
+                   ? 'btn btn-primary btn-sm'
+                   : 'btn btn-outline btn-sm'">
+
+                1
+
+            </a>
+
+
+
+            <!-- 다음 -->
+            <a th:if="${page < totalPages}"
+               class="btn btn-outline btn-sm"
+               th:href="@{/admin/class/list(
+                   page=${page + 1},
+                   keyword=${keyword},
+                   status=${status}
+               )}">
+
+                다음
+
+            </a>
+
+
+        </div>
+
+
+    </section>
+
+
+</main>
+
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+
+</body>
+</html>

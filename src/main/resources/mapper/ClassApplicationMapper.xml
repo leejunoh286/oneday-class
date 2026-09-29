@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.onedayclass.mapper.ClassApplicationMapper">
+
+    <!-- 클래스 신청 -->
+    <insert id="insertApplication"
+            parameterType="kr.or.oti.onedayclass.vo.ClassApplicationVO"
+            useGeneratedKeys="true"
+            keyProperty="applicationId">
+
+        INSERT INTO class_application (
+            member_id,
+            class_id,
+            status
+        )
+        VALUES (
+            #{memberId},
+            #{classId},
+            #{status}
+        )
+
+    </insert>
+
+
+    <!-- 특정 회원의 특정 클래스 신청 내역 조회 -->
+    <select id="selectApplication"
+            resultType="kr.or.oti.onedayclass.vo.ClassApplicationVO">
+
+        SELECT
+            application_id AS applicationId,
+            member_id AS memberId,
+            class_id AS classId,
+            status,
+            applied_at AS appliedAt,
+            approved_at AS approvedAt,
+            rejected_at AS rejectedAt,
+            completed_at AS completedAt,
+            cancelled_at AS cancelledAt
+        FROM class_application
+        WHERE member_id = #{memberId}
+          AND class_id = #{classId}
+
+    </select>
+
+
+    <!-- 특정 회원의 특정 클래스 신청 기록 개수 -->
+    <select id="countApplication"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_application
+        WHERE member_id = #{memberId}
+          AND class_id = #{classId}
+
+    </select>
+
+
+    <!-- 특정 클래스의 신청자 목록 -->
+    <select id="selectApplicationsByClassId"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassApplicationVO">
+
+        SELECT
+            application_id AS applicationId,
+            member_id AS memberId,
+            class_id AS classId,
+            status,
+            applied_at AS appliedAt,
+            approved_at AS approvedAt,
+            rejected_at AS rejectedAt,
+            completed_at AS completedAt,
+            cancelled_at AS cancelledAt
+        FROM class_application
+        WHERE class_id = #{classId}
+        ORDER BY applied_at DESC
+
+    </select>
+
+
+    <!-- 특정 회원이 신청한 클래스 목록 조회 -->
+    <select id="selectApplicationsByMemberId"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.dto.MyPageApplicationDTO">
+
+        SELECT
+            ca.application_id AS applicationId,
+            ca.member_id AS memberId,
+            ca.class_id AS classId,
+            ca.status AS applicationStatus,
+            ca.applied_at AS appliedAt,
+            ca.approved_at AS approvedAt,
+            ca.rejected_at AS rejectedAt,
+            ca.completed_at AS completedAt,
+            ca.cancelled_at AS cancelledAt,
+
+            cp.title AS title,
+            cp.price AS price,
+            cp.capacity AS capacity,
+            cp.class_date AS classDate,
+            cp.deadline AS deadline,
+            cp.location AS location,
+            cp.status AS classStatus
+
+        FROM class_application ca
+
+        INNER JOIN class_post cp
+            ON ca.class_id = cp.class_id
+
+        WHERE ca.member_id = #{memberId}
+
+        ORDER BY ca.applied_at DESC
+
+    </select>
+
+
+    <!-- 신청 취소 -->
+    <update id="cancelApplication">
+
+        UPDATE class_application
+        SET
+            status = 'CANCELLED',
+            cancelled_at = CURRENT_TIMESTAMP
+        WHERE application_id = #{applicationId}
+          AND member_id = #{memberId}
+          AND status = 'PENDING'
+
+    </update>
+
+
+    <!-- 신청 승인 -->
+    <update id="approveApplication"
+            parameterType="long">
+
+        UPDATE class_application
+        SET
+            status = 'APPROVED',
+            approved_at = CURRENT_TIMESTAMP
+        WHERE application_id = #{applicationId}
+          AND status = 'PENDING'
+
+    </update>
+
+
+    <!-- 신청 거절 -->
+    <update id="rejectApplication"
+            parameterType="long">
+
+        UPDATE class_application
+        SET
+            status = 'REJECTED',
+            rejected_at = CURRENT_TIMESTAMP
+        WHERE application_id = #{applicationId}
+          AND status = 'PENDING'
+
+    </update>
+
+
+    <!-- 수강 완료 처리 -->
+    <update id="completeApplication"
+            parameterType="long">
+
+        UPDATE class_application
+        SET
+            status = 'COMPLETED',
+            completed_at = CURRENT_TIMESTAMP
+        WHERE application_id = #{applicationId}
+          AND status = 'APPROVED'
+
+    </update>
+
+
+    <!-- 신청 번호로 신청 내역 조회 -->
+    <select id="selectApplicationById"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassApplicationVO">
+
+        SELECT
+            application_id AS applicationId,
+            member_id AS memberId,
+            class_id AS classId,
+            status,
+            applied_at AS appliedAt,
+            approved_at AS approvedAt,
+            rejected_at AS rejectedAt,
+            completed_at AS completedAt,
+            cancelled_at AS cancelledAt
+        FROM class_application
+        WHERE application_id = #{applicationId}
+
+    </select>
+
+
+    <!-- 특정 클래스의 현재 승인 인원 수 조회 -->
+    <select id="countApprovedApplications"
+            parameterType="long"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_application
+        WHERE class_id = #{classId}
+          AND status = 'APPROVED'
+
+    </select>
+    
+    
+    <!-- 현재 참여 인원 조회 -->
+	<select id="countCurrentParticipants"
+	        parameterType="long"
+	        resultType="int">
+
+	    SELECT COUNT(*)
+	    FROM class_application
+	    WHERE class_id = #{classId}
+	      AND status IN ('APPROVED', 'COMPLETED')
+
+	</select>
+	
+	
+	<update id="cancelApplicationsByMember"
+			parameterType="long">
+		
+		UPDATE class_application
+		SET	status = 'CANCELLED'
+			
+		WHERE member_id = #{memberId}
+		  AND status IN ('PENDING', 'APPROVED')		
+	</update>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+

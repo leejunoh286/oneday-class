@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('클래스 개설')}"></head>
+
+<body>
+
+	<header th:replace="~{fragments/layout :: header}"></header>
+
+	<main id="main-content" class="shell page form-page">
+
+		<div class="page-heading">
+
+			<span class="eyebrow">
+				SHARE YOUR DAY
+			</span>
+
+			<h1>
+				클래스 개설
+			</h1>
+
+			<p>
+				나의 취미가 누군가의 새로운 시작이 될 수 있어요.
+			</p>
+
+		</div>
+
+
+		<form class="panel"
+			th:action="@{/class/register}"
+			th:object="${classRegisterDTO}"
+			method="post"
+			enctype="multipart/form-data"
+			data-date-form>
+
+
+			<h2 class="form-section-title">
+				클래스 기본 정보
+			</h2>
+
+
+			<div class="form-grid">
+
+
+				<!-- 카테고리 -->
+				<div class="field field-wide">
+
+					<label for="categoryId">
+						카테고리
+					</label>
+
+					<select class="form-select"
+						th:field="*{categoryId}"
+						th:errorclass="is-invalid"
+						required
+						aria-describedby="categoryId-error">
+
+						<th:block
+							th:replace="~{fragments/components :: categoryOptions}">
+						</th:block>
+
+					</select>
+
+
+					<p class="field-error"
+						id="categoryId-error"
+						th:if="${#fields.hasErrors('categoryId')}"
+						th:errors="*{categoryId}">
+					</p>
+
+				</div>
+
+
+				<!-- 클래스 제목 -->
+				<div class="field field-wide">
+
+					<label for="title">
+						클래스 제목
+					</label>
+
+					<input class="form-control"
+						th:field="*{title}"
+						th:errorclass="is-invalid"
+						maxlength="200"
+						required
+						placeholder="예: 초보자를 위한 테니스 원데이 클래스"
+						aria-describedby="title-error">
+
+
+					<p id="title-error"
+						class="field-error"
+						th:if="${#fields.hasErrors('title')}"
+						th:errors="*{title}">
+					</p>
+
+				</div>
+
+
+				<!-- 클래스 소개 -->
+				<div class="field field-wide">
+
+					<label for="description">
+						클래스 소개
+					</label>
+
+					<textarea class="form-control"
+						th:field="*{description}"
+						th:errorclass="is-invalid"
+						rows="8"
+						required
+						placeholder="어떤 경험을 함께하나요? 진행 내용과 준비물을 소개해주세요."
+						aria-describedby="description-error"></textarea>
+
+
+					<p id="description-error"
+						class="field-error"
+						th:if="${#fields.hasErrors('description')}"
+						th:errors="*{description}">
+					</p>
+
+				</div>
+
+
+				<!-- 가격 -->
+				<div class="field">
+
+					<label for="price">
+						가격 (원)
+					</label>
+
+					<input class="form-control"
+						type="number"
+						th:field="*{price}"
+						th:errorclass="is-invalid"
+						aria-describedby="price-error"
+						min="0"
+						max="2147483647"
+						required>
+
+
+					<p class="field-error"
+						id="price-error"
+						th:if="${#fields.hasErrors('price')}"
+						th:errors="*{price}">
+					</p>
+
+
+					<p class="form-help">
+						무료 클래스는 0원을 입력해주세요.
+					</p>
+
+				</div>
+
+
+				<!-- 모집 인원 -->
+				<div class="field">
+
+					<label for="capacity">
+						모집 인원 (명)
+					</label>
+
+					<input class="form-control"
+						type="number"
+						th:field="*{capacity}"
+						th:errorclass="is-invalid"
+						aria-describedby="capacity-error"
+						min="1"
+						max="2147483647"
+						required>
+
+
+					<p class="field-error"
+						id="capacity-error"
+						th:if="${#fields.hasErrors('capacity')}"
+						th:errors="*{capacity}">
+					</p>
+
+				</div>
+
+
+				<!-- 클래스 진행 일시 -->
+				<div class="field">
+
+					<label for="classDate">
+						클래스 진행 일시
+					</label>
+
+					<input class="form-control"
+						type="datetime-local"
+						th:field="*{classDate}"
+						th:errorclass="is-invalid"
+						aria-describedby="classDate-error"
+						required>
+
+
+					<p class="field-error"
+						id="classDate-error"
+						th:if="${#fields.hasErrors('classDate')}"
+						th:errors="*{classDate}">
+					</p>
+
+				</div>
+
+
+				<!-- 모집 마감 일시 -->
+				<div class="field">
+
+					<label for="deadline">
+						모집 마감 일시
+					</label>
+
+					<input class="form-control"
+						type="datetime-local"
+						th:field="*{deadline}"
+						th:errorclass="is-invalid"
+						aria-describedby="deadline-error"
+						required>
+
+
+					<p class="field-error"
+						id="deadline-error"
+						th:if="${#fields.hasErrors('deadline')}"
+						th:errors="*{deadline}">
+					</p>
+
+
+					<p class="form-help">
+						진행 일시보다 늦게 설정할 수 없어요.
+					</p>
+
+				</div>
+
+
+				<!-- 장소 -->
+				<div class="field field-wide">
+
+					<label for="location">
+						장소
+					</label>
+
+					<input class="form-control"
+						th:field="*{location}"
+						th:errorclass="is-invalid"
+						maxlength="255"
+						required
+						placeholder="참여자가 찾아올 수 있는 장소를 입력해주세요."
+						aria-describedby="location-error">
+
+
+					<p id="location-error"
+						class="field-error"
+						th:if="${#fields.hasErrors('location')}"
+						th:errors="*{location}">
+					</p>
+
+				</div>
+
+
+				<!-- ===================================== -->
+				<!-- 클래스 이미지 업로드 -->
+				<!-- ===================================== -->
+				<div class="field field-wide">
+
+					<label for="images">
+						클래스 이미지
+					</label>
+
+					<input class="form-control"
+						type="file"
+						id="images"
+						name="images"
+						accept="image/*"
+						multiple>
+
+
+					<p class="form-help">
+						최대 5장까지 업로드할 수 있습니다.
+						첫 번째 이미지가 대표 이미지로 사용됩니다.
+						이미지 한 장당 최대 10MB입니다.
+					</p>
+
+				</div>
+
+
+			</div>
+
+
+			<div class="form-actions">
+
+				<a class="btn btn-outline"
+					th:href="@{/class/list}">
+					취소
+				</a>
+
+
+				<button class="btn btn-primary"
+					type="submit">
+					클래스 개설하기
+				</button>
+
+			</div>
+
+		</form>
+
+	</main>
+
+
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+
+</html>

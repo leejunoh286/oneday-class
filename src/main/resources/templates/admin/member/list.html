@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('회원 관리')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/layout :: header}"></header>
+
+
+<main id="main-content"
+      class="shell page">
+
+
+    <!-- =====================================================
+         페이지 제목
+         ===================================================== -->
+    <section class="panel">
+
+        <span class="eyebrow">
+            ADMIN
+        </span>
+
+        <h1>
+            회원 관리
+        </h1>
+
+        <p class="muted">
+            회원을 검색하고 상태와 권한을 관리할 수 있습니다.
+        </p>
+
+
+        <div class="actions"
+             style="margin-top:16px;">
+
+            <a th:href="@{/admin}"
+               class="btn btn-outline">
+                대시보드로 돌아가기
+            </a>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         성공 메시지
+         ===================================================== -->
+    <div class="panel"
+         th:if="${successMessage}"
+         style="margin-top:20px;">
+
+        <p style="
+            color:#087f5b;
+            font-weight:600;
+            margin:0;
+        "
+        th:text="${successMessage}">
+        </p>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         오류 메시지
+         ===================================================== -->
+    <div class="panel"
+         th:if="${errorMessage}"
+         style="margin-top:20px;">
+
+        <p style="
+            color:#dc3545;
+            font-weight:600;
+            margin:0;
+        "
+        th:text="${errorMessage}">
+        </p>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         검색 / 필터
+         ===================================================== -->
+    <section class="panel section">
+
+        <h2>
+            회원 검색
+        </h2>
+
+
+        <form th:action="@{/admin/member/list}"
+              method="get">
+
+
+            <div style="
+                display:grid;
+                grid-template-columns:2fr 1fr 1fr auto;
+                gap:12px;
+                align-items:end;
+                margin-top:20px;
+            ">
+
+
+                <!-- 검색어 -->
+                <div class="form-group">
+
+                    <label for="keyword">
+                        검색어
+                    </label>
+
+                    <input type="text"
+                           id="keyword"
+                           name="keyword"
+                           class="form-control"
+                           th:value="${keyword}"
+                           placeholder="아이디, 이름, 닉네임, 이메일">
+
+                </div>
+
+
+                <!-- 회원 상태 -->
+                <div class="form-group">
+
+                    <label for="withdrawn">
+                        회원 상태
+                    </label>
+
+                    <select id="withdrawn"
+                            name="withdrawn"
+                            class="form-control">
+
+                        <option value="">
+                            전체
+                        </option>
+
+                        <option value="0"
+                                th:selected="${withdrawn != null and withdrawn == 0}">
+                            정상
+                        </option>
+
+                        <option value="1"
+                                th:selected="${withdrawn != null and withdrawn == 1}">
+                            탈퇴
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- 권한 -->
+                <div class="form-group">
+
+                    <label for="roleId">
+                        권한
+                    </label>
+
+                    <select id="roleId"
+                            name="roleId"
+                            class="form-control">
+
+                        <option value="">
+                            전체
+                        </option>
+
+                        <option value="1"
+                                th:selected="${roleId != null and roleId == 1}">
+                            일반회원
+                        </option>
+
+                        <option value="2"
+                                th:selected="${roleId != null and roleId == 2}">
+                            관리자
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- 검색 버튼 -->
+                <div class="actions">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        검색
+                    </button>
+
+                    <a th:href="@{/admin/member/list}"
+                       class="btn btn-outline">
+                        초기화
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         회원 목록
+         ===================================================== -->
+    <section class="section">
+
+
+        <div class="section-heading">
+
+            <div>
+
+                <h2>
+                    회원 목록
+
+                    <!--
+                        현재 페이지의 회원 수가 아니라
+                        검색 조건에 맞는 전체 회원 수
+                    -->
+                    <span class="count-label"
+                          th:text="${totalCount}">
+                        0
+                    </span>
+
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             검색 결과 없음
+             ================================================= -->
+        <div class="empty-state"
+             th:if="${#lists.isEmpty(memberList)}">
+
+            <h3>
+                조건에 해당하는 회원이 없습니다.
+            </h3>
+
+        </div>
+
+
+
+        <!-- =================================================
+             회원 테이블
+             ================================================= -->
+        <div class="panel table-panel"
+             th:unless="${#lists.isEmpty(memberList)}">
+
+
+            <table class="responsive-table">
+
+
+                <caption class="visually-hidden">
+                    관리자 회원 목록
+                </caption>
+
+
+                <thead>
+
+                    <tr>
+                        <th>번호</th>
+                        <th>회원</th>
+                        <th>이메일</th>
+                        <th>권한</th>
+                        <th>상태</th>
+                        <th>가입일</th>
+                        <th>관리</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                    <tr th:each="member : ${memberList}">
+
+
+                        <!-- 회원 번호 -->
+                        <td data-label="번호"
+                            th:text="${member.memberId}">
+                        </td>
+
+
+                        <!-- 회원 기본정보 -->
+                        <td data-label="회원">
+
+                            <div>
+
+                                <strong th:text="${member.nickname}">
+                                    닉네임
+                                </strong>
+
+
+                                <small class="table-meta">
+
+                                    <span th:text="${member.loginId}">
+                                        loginId
+                                    </span>
+
+                                    ·
+
+                                    <span th:text="${member.name}">
+                                        이름
+                                    </span>
+
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- 이메일 -->
+                        <td data-label="이메일"
+                            th:text="${member.email}">
+                        </td>
+
+
+                        <!-- 권한 -->
+                        <td data-label="권한">
+
+                            <span th:if="${member.roleId == 1}">
+                                일반회원
+                            </span>
+
+                            <span th:if="${member.roleId == 2}">
+                                관리자
+                            </span>
+
+                        </td>
+
+
+                        <!-- 회원 상태 -->
+                        <td data-label="상태">
+
+                            <span th:if="${!member.withdrawn}"
+                                  style="
+                                      color:#087f5b;
+                                      font-weight:600;
+                                  ">
+                                정상
+                            </span>
+
+
+                            <span th:if="${member.withdrawn}"
+                                  style="
+                                      color:#dc3545;
+                                      font-weight:600;
+                                  ">
+                                탈퇴
+                            </span>
+
+                        </td>
+
+
+                        <!-- 가입일 -->
+                        <td data-label="가입일">
+
+                            <span th:if="${member.createdAt != null}"
+                                  th:text="${#temporals.format(
+                                      member.createdAt,
+                                      'yyyy.MM.dd'
+                                  )}">
+                            </span>
+
+                        </td>
+
+
+                        <!-- 관리 기능 -->
+                        <td data-label="관리">
+
+
+                            <!-- 탈퇴회원 -->
+                            <span th:if="${member.withdrawn}"
+                                  class="muted">
+
+                                탈퇴 완료
+
+                            </span>
+
+
+
+                            <!-- 정상회원 -->
+                            <div class="actions"
+                                 th:if="${!member.withdrawn}">
+
+
+                                <!-- =================================
+                                     권한 변경
+                                     ================================= -->
+                                <form th:action="@{/admin/member/role}"
+                                      method="post">
+
+
+                                    <input type="hidden"
+                                           name="memberId"
+                                           th:value="${member.memberId}">
+
+
+                                    <!--
+                                        현재 일반회원이면 2(관리자)
+                                        현재 관리자면 1(일반회원)
+                                    -->
+                                    <input type="hidden"
+                                           name="roleId"
+                                           th:value="${member.roleId == 1 ? 2 : 1}">
+
+
+                                    <button type="submit"
+                                            class="btn btn-outline btn-sm"
+                                            th:text="${member.roleId == 1
+                                                ? '관리자로 변경'
+                                                : '일반회원으로 변경'}">
+
+                                        권한 변경
+
+                                    </button>
+
+                                </form>
+
+
+
+                                <!-- =================================
+                                     관리자 회원 탈퇴 처리
+                                     ================================= -->
+                                <form th:action="@{/admin/member/withdraw}"
+                                      method="post"
+                                      onsubmit="return confirm(
+                                          '정말 이 회원을 탈퇴 처리하시겠습니까?'
+                                      );">
+
+
+                                    <input type="hidden"
+                                           name="memberId"
+                                           th:value="${member.memberId}">
+
+
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm">
+
+                                        탈퇴 처리
+
+                                    </button>
+
+                                </form>
+
+
+                            </div>
+
+                        </td>
+
+
+                    </tr>
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+
+        <!-- =====================================================
+             페이징
+             ===================================================== -->
+        <div class="pagination"
+             th:if="${totalPages > 1}"
+             style="
+                 display:flex;
+                 justify-content:center;
+                 align-items:center;
+                 gap:8px;
+                 flex-wrap:wrap;
+                 margin-top:24px;
+             ">
+
+
+            <!-- 이전 페이지 -->
+            <a th:if="${page > 1}"
+               class="btn btn-outline btn-sm"
+               th:href="@{/admin/member/list(
+                   page=${page - 1},
+                   keyword=${keyword},
+                   withdrawn=${withdrawn},
+                   roleId=${roleId}
+               )}">
+
+                이전
+
+            </a>
+
+
+
+            <!-- 페이지 번호 -->
+            <a th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+
+               th:href="@{/admin/member/list(
+                   page=${pageNumber},
+                   keyword=${keyword},
+                   withdrawn=${withdrawn},
+                   roleId=${roleId}
+               )}"
+
+               th:text="${pageNumber}"
+
+               th:class="${pageNumber == page}
+                   ? 'btn btn-primary btn-sm'
+                   : 'btn btn-outline btn-sm'">
+
+                1
+
+            </a>
+
+
+
+            <!-- 다음 페이지 -->
+            <a th:if="${page < totalPages}"
+               class="btn btn-outline btn-sm"
+               th:href="@{/admin/member/list(
+                   page=${page + 1},
+                   keyword=${keyword},
+                   withdrawn=${withdrawn},
+                   roleId=${roleId}
+               )}">
+
+                다음
+
+            </a>
+
+
+        </div>
+
+
+    </section>
+
+
+</main>
+
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+
+</body>
+</html>

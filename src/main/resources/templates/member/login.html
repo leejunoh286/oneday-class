@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('로그인')}"></head>
+<body>
+	<header th:replace="~{fragments/layout :: header}"></header>
+	<main id="main-content" class="shell page auth-page">
+		<div class="page-heading">
+			<div class="auth-mark" aria-hidden="true">✦</div>
+			<h1>다시 만나 반가워요</h1>
+			<p>오늘은 어떤 새로운 경험을 해볼까요?</p>
+		</div>
+		<form class="panel form-stack" th:action="@{/member/login}"
+			method="post">
+			<p class="notice" th:if="${param.joined}" role="status">회원가입이
+				완료되었습니다. 로그인해주세요.</p>
+			<p class="notice notice-error" th:if="${param.error}" role="alert">아이디
+				또는 비밀번호를 확인해주세요.</p>
+			<p class="notice" th:if="${param.logout}" role="status">안전하게
+				로그아웃되었습니다.</p>
+			<div class="field">
+				<label for="loginId">아이디</label><input class="form-control"
+					id="loginId" name="loginId" required autocomplete="username"
+					placeholder="아이디를 입력해주세요">
+			</div>
+			<div class="field">
+				<label for="password">비밀번호</label><input class="form-control"
+					type="password" id="password" name="password" required
+					autocomplete="current-password" placeholder="비밀번호를 입력해주세요">
+			</div>
+			<button class="btn btn-primary btn-block" type="submit">로그인</button>
+		</form>
+		<p class="auth-bottom">
+			아직 회원이 아니신가요?<a class="text-link" th:href="@{/member/join}">회원가입</a>
+		</p>
+	</main>
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
+

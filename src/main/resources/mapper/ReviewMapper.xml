@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.onedayclass.mapper.ReviewMapper">
+
+    <!-- 리뷰 등록 -->
+    <insert id="insertReview"
+            parameterType="kr.or.oti.onedayclass.vo.ReviewVO"
+            useGeneratedKeys="true"
+            keyProperty="reviewId">
+
+        INSERT INTO review (
+            member_id,
+            class_id,
+            rating,
+            content
+        )
+        VALUES (
+            #{memberId},
+            #{classId},
+            #{rating},
+            #{content}
+        )
+
+    </insert>
+
+
+    <!-- 특정 클래스의 리뷰 목록 조회 -->
+    <select id="selectReviewsByClassId"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ReviewVO">
+
+        SELECT
+            review_id AS reviewId,
+            member_id AS memberId,
+            class_id AS classId,
+            rating,
+            content,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM review
+        WHERE class_id = #{classId}
+        ORDER BY created_at DESC
+
+    </select>
+
+
+    <!-- 특정 회원이 특정 클래스에 작성한 리뷰 조회 -->
+    <select id="selectReviewByMemberAndClass"
+            resultType="kr.or.oti.onedayclass.vo.ReviewVO">
+
+        SELECT
+            review_id AS reviewId,
+            member_id AS memberId,
+            class_id AS classId,
+            rating,
+            content,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM review
+        WHERE member_id = #{memberId}
+          AND class_id = #{classId}
+
+    </select>
+
+
+    <!-- 리뷰 번호로 리뷰 조회 -->
+    <select id="selectReviewById"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ReviewVO">
+
+        SELECT
+            review_id AS reviewId,
+            member_id AS memberId,
+            class_id AS classId,
+            rating,
+            content,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM review
+        WHERE review_id = #{reviewId}
+
+    </select>
+
+
+    <!-- 리뷰 수정 -->
+    <update id="updateReview"
+            parameterType="kr.or.oti.onedayclass.vo.ReviewVO">
+
+        UPDATE review
+        SET
+            rating = #{rating},
+            content = #{content}
+        WHERE review_id = #{reviewId}
+          AND member_id = #{memberId}
+
+    </update>
+
+
+    <!-- 리뷰 삭제 -->
+    <delete id="deleteReview">
+
+        DELETE FROM review
+        WHERE review_id = #{reviewId}
+          AND member_id = #{memberId}
+
+    </delete>
+
+</mapper>

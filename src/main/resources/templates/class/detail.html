@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head(${classVO.title})}">
+</head>
+
+<body>
+
+<header th:replace="~{fragments/layout :: header}">
+</header>
+
+
+<main id="main-content"
+      class="shell page">
+
+
+    <!-- 현재 위치 -->
+    <nav class="breadcrumb-line"
+         aria-label="현재 위치">
+
+        <a th:href="@{/class/list}">
+            클래스 목록
+        </a>
+
+        <span>
+            /
+        </span>
+
+        <span th:replace="~{fragments/components :: categoryName(${classVO.categoryId})}">
+        </span>
+
+    </nav>
+
+
+    <div class="detail-layout">
+
+
+        <!-- ==========================================
+             왼쪽 영역
+             ========================================== -->
+        <div class="detail-content">
+
+
+            <!-- ==========================================
+		     클래스 대표 비주얼 영역
+		     이미지가 있으면 S3 이미지,
+		     없으면 기존 카테고리 art 표시
+		     ========================================== -->
+
+			<!-- S3 이미지가 있는 경우 -->
+			<th:block th:if="${classImages != null and !classImages.isEmpty()}">
+			
+			    <div style="margin-bottom:24px;">
+			
+			        <!-- 첫 번째 이미지 = 대표 이미지 -->
+			        <img id="mainClassImage"
+			             th:src="${classImages[0].presignedUrl}"
+			             th:alt="${classVO.title}"
+			             style="
+			                width:100%;
+			                height:420px;
+			                object-fit:cover;
+			                border-radius:20px;
+			                display:block;
+			             ">
+			
+			        <!-- 이미지가 여러 장이면 썸네일 표시 -->
+			        <div th:if="${classImages.size() > 1}"
+			             style="
+			                display:flex;
+			                gap:10px;
+			                margin-top:12px;
+			                overflow-x:auto;
+			             ">
+			
+			            <img th:each="image : ${classImages}"
+			                 th:src="${image.presignedUrl}"
+			                 th:alt="${classVO.title}"
+			                 class="class-thumbnail"
+			                 onclick="changeMainImage(this.src)"
+			                 style="
+			                    width:120px;
+			                    height:90px;
+			                    object-fit:cover;
+			                    border-radius:12px;
+			                    flex:0 0 auto;
+			                    cursor:pointer;
+			                 ">
+			
+			        </div>
+			
+			    </div>
+			
+			</th:block>
+			
+			
+			<!-- S3 이미지가 없는 경우에만 기존 카테고리 art 표시 -->
+			<th:block th:if="${classImages == null or classImages.isEmpty()}">
+			
+			    <div th:replace="~{fragments/components :: art(${classVO.categoryId})}">
+			    </div>
+
+			</th:block>
+
+
+
+            <!-- ==========================================
+                 클래스 정보
+                 ========================================== -->
+            <section class="panel">
+
+
+                <span class="eyebrow">
+
+                    <span th:replace="~{fragments/components :: categoryName(${classVO.categoryId})}">
+                    </span>
+
+                </span>
+
+
+                <h1 th:text="${classVO.title}">
+                    클래스 제목
+                </h1>
+
+
+                <p class="muted form-help">
+
+                    클래스 #
+
+                    <span th:text="${classVO.classId}">
+                    </span>
+
+                    · 등록
+
+                    <span th:text="${#temporals.format(
+                            classVO.createdAt,
+                            'yyyy. MM. dd.'
+                    )}">
+                    </span>
+
+                </p>
+
+
+                <p class="muted form-help">
+
+                    개설자:
+
+                    <strong th:text="${classVO.hostNickname}">
+                        닉네임
+                    </strong>
+
+                    (
+
+                    <span th:text="${classVO.hostLoginId}">
+                        아이디
+                    </span>
+
+                    )
+
+                </p>
+
+
+                <div class="content-section">
+
+                    <h2>
+                        이런 하루를 함께해요
+                    </h2>
+
+                    <p class="prose"
+                       th:text="${classVO.description}">
+                        클래스 설명
+                    </p>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ==========================================
+                 찾아오는 길
+                 ========================================== -->
+            <section class="panel content-section">
+
+
+                <h2>
+                    찾아오는 길
+                </h2>
+
+
+                <p class="form-help">
+
+                    클래스 장소:
+
+                    <strong id="class-address"
+                            th:text="${classVO.location}">
+                        클래스 장소
+                    </strong>
+
+                </p>
+
+
+                <!-- 지도 -->
+                <div id="kakao-map"
+                     style="
+                        width:100%;
+                        height:380px;
+                        margin-top:16px;
+                        border-radius:16px;
+                        overflow:hidden;
+                     ">
+                </div>
+
+
+                <p id="map-error"
+                   class="notice notice-warning"
+                   style="display:none; margin-top:16px;">
+                </p>
+
+
+                <div class="actions"
+                     style="margin-top:16px;">
+
+                    <a id="kakao-map-link"
+                       class="btn btn-outline"
+                       href="#"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       style="display:none;">
+
+                        카카오맵에서 길찾기
+
+                    </a>
+
+                </div>
+
+
+
+                <!-- ==========================================
+                     출발지 검색
+                     ========================================== -->
+                <div class="content-section">
+
+
+                    <h3>
+                        출발지에서 얼마나 걸릴까요?
+                    </h3>
+
+
+                    <p class="form-help">
+                        출발지를 검색한 뒤 정확한 장소를 선택하면
+                        도보, 대중교통, 자전거 경로를 확인할 수 있습니다.
+                    </p>
+
+
+                    <div class="form-group">
+
+                        <label for="placeKeyword">
+                            출발지
+                        </label>
+
+                        <input type="text"
+                               id="placeKeyword"
+                               class="form-control"
+                               placeholder="예: 강남역, 코엑스, 래미안"
+                               autocomplete="off">
+
+                    </div>
+
+
+                    <div class="actions"
+                         style="margin-top:12px;">
+
+                        <button type="button"
+                                id="placeSearchButton"
+                                class="btn btn-primary">
+
+                            장소 검색
+
+                        </button>
+
+                    </div>
+
+
+                    <p id="placeSearchLoading"
+                       class="form-help"
+                       style="display:none; margin-top:16px;">
+
+                        장소를 검색하고 있습니다...
+
+                    </p>
+
+
+                    <p id="placeSearchError"
+                       class="notice notice-warning"
+                       style="display:none; margin-top:16px;">
+                    </p>
+
+
+
+                    <!-- 검색 결과 -->
+                    <div id="placeSearchResult"
+                         style="display:none; margin-top:20px;">
+
+
+                        <h3>
+                            검색 결과
+                        </h3>
+
+
+                        <p class="form-help">
+                            실제 출발할 장소를 선택해주세요.
+                        </p>
+
+
+                        <div id="placeResultList">
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- 선택한 장소 -->
+                    <div id="selectedPlaceArea"
+                         class="notice"
+                         style="display:none; margin-top:20px;">
+
+
+                        <p>
+                            선택한 출발지
+                        </p>
+
+
+                        <strong id="selectedPlaceName">
+                        </strong>
+
+
+                        <p id="selectedPlaceAddress"
+                           class="form-help">
+                        </p>
+
+
+                        <div class="actions"
+                             style="margin-top:14px;">
+
+
+                            <button type="button"
+                                    id="walkingRouteButton"
+                                    class="btn btn-primary">
+
+                                도보 경로
+
+                            </button>
+
+
+                            <button type="button"
+                                    id="transitRouteButton"
+                                    class="btn btn-outline">
+
+                                대중교통 경로
+
+                            </button>
+
+
+                            <button type="button"
+                                    id="bicycleRouteButton"
+                                    class="btn btn-outline">
+
+                                자전거 경로
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <p id="routeLoading"
+                       class="form-help"
+                       style="display:none; margin-top:16px;">
+
+                        경로를 계산하고 있습니다...
+
+                    </p>
+
+
+                    <p id="routeError"
+                       class="notice notice-warning"
+                       style="display:none; margin-top:16px;">
+                    </p>
+
+
+
+                    <!-- 경로 결과 -->
+                    <div id="routeResult"
+                         class="notice"
+                         style="display:none; margin-top:20px;">
+
+
+                        <h3 id="routeResultTitle">
+                            경로 정보
+                        </h3>
+
+
+                        <p>
+                            출발지:
+                            <strong id="routeStartAddress">
+                            </strong>
+                        </p>
+
+
+                        <p>
+                            도착지:
+                            <strong id="routeDestinationAddress">
+                            </strong>
+                        </p>
+
+
+                        <p>
+                            거리:
+                            <strong id="routeDistance">
+                            </strong>
+                        </p>
+
+
+                        <p>
+                            예상 시간:
+                            <strong id="routeDuration">
+                            </strong>
+                        </p>
+
+
+
+                        <!-- 대중교통 전용 -->
+                        <div id="transitExtraInfo"
+                             style="display:none;">
+
+
+                            <p>
+                                교통수단:
+                                <strong id="routeTransitType">
+                                </strong>
+                            </p>
+
+
+                            <p>
+                                환승:
+                                <strong id="routeTransfers">
+                                </strong>
+                            </p>
+
+
+                            <p>
+                                예상 요금:
+                                <strong id="routeFare">
+                                </strong>
+                            </p>
+
+                        </div>
+
+
+                        <a id="routeDetailLink"
+                           class="btn btn-outline btn-sm"
+                           href="#"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           style="display:none; margin-top:10px;">
+
+                            카카오맵에서 자세히 보기
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ==========================================
+                 댓글
+                 ========================================== -->
+            <section class="panel content-section"
+                     aria-labelledby="comments-title">
+
+
+                <h2 id="comments-title">
+
+                    궁금한 점을 나눠보세요
+
+                    <span class="count-label"
+                          th:text="${#lists.size(commentList)}">
+                    </span>
+
+                </h2>
+
+
+                <form class="comment-form"
+                      sec:authorize="isAuthenticated()"
+                      th:action="@{/comment/register}"
+                      th:object="${commentDTO}"
+                      method="post">
+
+
+                    <input type="hidden"
+                           name="classId"
+                           th:value="${classVO.classId}">
+
+
+                    <label class="visually-hidden"
+                           for="content">
+                        댓글 내용
+                    </label>
+
+
+                    <textarea class="form-control"
+                              th:field="*{content}"
+                              rows="3"
+                              maxlength="1000"
+                              required
+                              placeholder="클래스에 대해 궁금한 점이나 의견을 남겨주세요.">
+                    </textarea>
+
+
+                    <div class="actions">
+
+                        <span class="form-help">
+                            최대 1,000자
+                        </span>
+
+                        <button type="submit"
+                                class="btn btn-primary btn-sm">
+
+                            댓글 등록
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+
+                <p class="notice"
+                   sec:authorize="isAnonymous()">
+
+                    <a class="text-link"
+                       th:href="@{/member/login}">
+                        로그인
+                    </a>
+
+                    하고 클래스에 대한 궁금한 점을 남겨보세요.
+
+                </p>
+
+
+                <p class="muted form-help"
+                   th:if="${#lists.isEmpty(commentList)}">
+
+                    아직 댓글이 없어요.
+
+                </p>
+
+
+
+                <article class="discussion-item"
+                         th:each="commentItem : ${commentList}">
+
+
+                    <div class="discussion-meta">
+
+                        <span class="discussion-author">
+
+                            회원
+
+                            <span th:text="${commentItem.memberId}">
+                            </span>
+
+                        </span>
+
+
+                        <time th:text="${#temporals.format(
+                                commentItem.createdAt,
+                                'yyyy. MM. dd. HH:mm'
+                        )}">
+                        </time>
+
+                    </div>
+
+
+                    <p class="prose"
+                       th:text="${commentItem.content}">
+                    </p>
+
+
+                    <th:block sec:authorize="isAuthenticated()">
+
+                        <div class="actions"
+                             th:if="${#authentication.principal.memberId == commentItem.memberId}">
+
+
+                            <a class="btn btn-outline btn-sm"
+                               th:href="@{/comment/update(
+                                    commentId=${commentItem.commentId},
+                                    classId=${classVO.classId}
+                               )}">
+
+                                수정
+
+                            </a>
+
+
+                            <form th:action="@{/comment/delete}"
+                                  method="post"
+                                  data-confirm="이 댓글을 삭제할까요?">
+
+
+                                <input type="hidden"
+                                       name="commentId"
+                                       th:value="${commentItem.commentId}">
+
+
+                                <input type="hidden"
+                                       name="classId"
+                                       th:value="${classVO.classId}">
+
+
+                                <button type="submit"
+                                        class="btn btn-danger-soft btn-sm">
+
+                                    삭제
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </th:block>
+
+                </article>
+
+            </section>
+
+
+
+            <!-- ==========================================
+                 리뷰
+                 ========================================== -->
+            <section class="panel content-section"
+                     aria-labelledby="reviews-title">
+
+
+                <h2 id="reviews-title">
+
+                    함께한 하루의 후기
+
+                    <span class="count-label"
+                          th:text="${#lists.size(reviewList)}">
+                    </span>
+
+                </h2>
+
+
+                <p class="muted"
+                   th:if="${#lists.isEmpty(reviewList)}">
+
+                    아직 등록된 후기가 없어요.
+
+                </p>
+
+
+
+                <article class="discussion-item"
+                         th:each="review : ${reviewList}">
+
+
+                    <div class="discussion-meta">
+
+                        <span class="discussion-author">
+
+                            회원
+
+                            <span th:text="${review.memberId}">
+                            </span>
+
+                        </span>
+
+
+                        <time th:text="${#temporals.format(
+                                review.createdAt,
+                                'yyyy. MM. dd. HH:mm'
+                        )}">
+                        </time>
+
+                    </div>
+
+
+                    <p class="stars">
+
+                        <span th:each="n : ${#numbers.sequence(1,5)}"
+                              th:text="${n <= review.rating ? '★' : '☆'}">
+                        </span>
+
+                    </p>
+
+
+                    <p class="prose"
+                       th:text="${review.content}">
+                    </p>
+
+
+                    <div class="actions"
+                         th:if="${myReview != null
+                         and myReview.reviewId == review.reviewId}">
+
+
+                        <a class="btn btn-outline btn-sm"
+                           th:href="@{/review/update(
+                                reviewId=${review.reviewId},
+                                classId=${classVO.classId}
+                           )}">
+
+                            수정
+
+                        </a>
+
+
+                        <form th:action="@{/review/delete}"
+                              method="post">
+
+
+                            <input type="hidden"
+                                   name="reviewId"
+                                   th:value="${review.reviewId}">
+
+
+                            <input type="hidden"
+                                   name="classId"
+                                   th:value="${classVO.classId}">
+
+
+                            <button type="submit"
+                                    class="btn btn-danger-soft btn-sm">
+
+                                삭제
+
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </article>
+
+            </section>
+
+        </div>
+
+
+
+        <!-- ==========================================
+             오른쪽 신청 정보
+             ========================================== -->
+        <aside class="panel detail-panel"
+               aria-label="클래스 신청 정보">
+
+
+            <span th:replace="~{fragments/components :: classStatus(${classVO.status})}">
+            </span>
+
+
+            <strong class="price"
+                    th:text="${classVO.price == 0
+                    ? '무료'
+                    : #numbers.formatInteger(
+                        classVO.price,
+                        1,
+                        'COMMA'
+                    ) + '원'}">
+            </strong>
+
+
+            <h2>
+                하루의 새로운 경험
+            </h2>
+
+
+            <dl class="detail-facts">
+
+
+                <div>
+
+                    <dt>
+                        개설자
+                    </dt>
+
+                    <dd>
+
+                        <strong th:text="${classVO.hostNickname}">
+                        </strong>
+
+                        <br>
+
+                        <span class="form-help">
+
+                            아이디:
+
+                            <span th:text="${classVO.hostLoginId}">
+                            </span>
+
+                        </span>
+
+                    </dd>
+
+                </div>
+
+
+                <div>
+
+                    <dt>
+                        진행 일시
+                    </dt>
+
+                    <dd th:text="${#temporals.format(
+                            classVO.classDate,
+                            'yyyy. MM. dd. HH:mm'
+                    )}">
+                    </dd>
+
+                </div>
+
+
+                <div>
+
+                    <dt>
+                        모집 마감
+                    </dt>
+
+                    <dd th:text="${#temporals.format(
+                            classVO.deadline,
+                            'yyyy. MM. dd. HH:mm'
+                    )}">
+                    </dd>
+
+                </div>
+
+
+                <div>
+
+                    <dt>
+                        장소
+                    </dt>
+
+                    <dd th:text="${classVO.location}">
+                    </dd>
+
+                </div>
+
+
+                <div>
+
+                    <dt>
+                        참여 인원
+                    </dt>
+
+                    <dd>
+
+                        <span th:text="${currentParticipantCount}">
+                        </span>
+
+                        /
+
+                        <span th:text="${classVO.capacity}">
+                        </span>
+
+                        명
+
+                    </dd>
+
+                </div>
+
+            </dl>
+
+
+
+            <!-- 개설자 -->
+            <div class="detail-actions"
+                 th:if="${isHost}">
+
+
+                <p class="notice">
+                    내가 개설한 클래스입니다.
+                </p>
+
+
+                <a class="btn btn-primary"
+                   th:href="@{/class/application/manage(
+                        classId=${classVO.classId}
+                   )}">
+
+                    신청자 관리
+
+                </a>
+
+
+                <a class="btn btn-outline"
+                   th:href="@{/class/update(
+                        classId=${classVO.classId}
+                   )}">
+
+                    클래스 수정
+
+                </a>
+
+
+                <form th:action="@{/class/delete}"
+                      method="post">
+
+
+                    <input type="hidden"
+                           name="classId"
+                           th:value="${classVO.classId}">
+
+
+                    <button type="submit"
+                            class="btn btn-danger-soft">
+
+                        클래스 삭제
+
+                    </button>
+
+                </form>
+
+            </div>
+
+
+
+            <!-- 비로그인 -->
+            <div class="detail-actions"
+                 sec:authorize="isAnonymous()">
+
+
+                <a class="btn btn-primary"
+                   th:href="@{/member/login}">
+
+                    로그인하고 참여하기
+
+                </a>
+
+            </div>
+
+
+
+            <!-- 로그인 사용자 -->
+            <th:block sec:authorize="isAuthenticated()">
+
+
+                <div class="detail-actions"
+                     th:if="${!isHost}">
+
+
+                    <th:block th:if="${!hasApplication}">
+
+
+                        <form th:if="${classVO.status == 'RECRUITING'}"
+                              th:action="@{/class/application/apply}"
+                              method="post">
+
+
+                            <input type="hidden"
+                                   name="classId"
+                                   th:value="${classVO.classId}">
+
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                클래스 신청하기
+
+                            </button>
+
+                        </form>
+
+                    </th:block>
+
+
+
+                    <div th:if="${hasApplication}">
+
+
+                        <span th:replace="~{fragments/components :: applicationStatus(${myApplication.status})}">
+                        </span>
+
+
+                        <form th:if="${myApplication.status == 'PENDING'}"
+                              th:action="@{/class/application/cancel}"
+                              method="post">
+
+
+                            <input type="hidden"
+                                   name="applicationId"
+                                   th:value="${myApplication.applicationId}">
+
+
+                            <input type="hidden"
+                                   name="classId"
+                                   th:value="${classVO.classId}">
+
+
+                            <button type="submit"
+                                    class="btn btn-outline">
+
+                                신청 취소
+
+                            </button>
+
+                        </form>
+
+                    </div>
+
+
+
+                    <a th:if="${canWriteReview}"
+                       class="btn btn-primary"
+                       th:href="@{/review/register(
+                            classId=${classVO.classId}
+                       )}">
+
+                        수강 후기 남기기
+
+                    </a>
+
+                </div>
+
+            </th:block>
+
+        </aside>
+
+    </div>
+
+</main>
+
+
+<footer th:replace="~{fragments/layout :: footer}">
+</footer>
+
+
+
+<!-- 네 기존 Kakao JavaScript Key 사용 -->
+<script type="text/javascript"
+        src="//dapi.kakao.com/v2/maps/sdk.js?appkey=0620352849ddfe2f9de9a5428989a5f7&libraries=services">
+</script>
+
+
+<script th:inline="javascript">
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        /* =========================================
+         * 클래스 정보
+         * ========================================= */
+
+        const classAddress =
+                /*[[${classVO.location}]]*/ "";
+
+        const classTitle =
+                /*[[${classVO.title}]]*/ "ActiveOn 클래스";
+
+        const classId =
+                /*[[${classVO.classId}]]*/ 0;
+
+
+
+        /* =========================================
+         * HTML 요소
+         * ========================================= */
+
+        const mapContainer =
+                document.getElementById("kakao-map");
+
+        const mapError =
+                document.getElementById("map-error");
+
+        const kakaoMapLink =
+                document.getElementById("kakao-map-link");
+
+
+        const placeKeyword =
+                document.getElementById("placeKeyword");
+
+        const placeSearchButton =
+                document.getElementById("placeSearchButton");
+
+        const placeSearchLoading =
+                document.getElementById("placeSearchLoading");
+
+        const placeSearchError =
+                document.getElementById("placeSearchError");
+
+        const placeSearchResult =
+                document.getElementById("placeSearchResult");
+
+        const placeResultList =
+                document.getElementById("placeResultList");
+
+
+        const selectedPlaceArea =
+                document.getElementById("selectedPlaceArea");
+
+        const selectedPlaceName =
+                document.getElementById("selectedPlaceName");
+
+        const selectedPlaceAddress =
+                document.getElementById("selectedPlaceAddress");
+
+
+        const walkingRouteButton =
+                document.getElementById("walkingRouteButton");
+
+        const transitRouteButton =
+                document.getElementById("transitRouteButton");
+
+        const bicycleRouteButton =
+                document.getElementById("bicycleRouteButton");
+
+
+        const routeLoading =
+                document.getElementById("routeLoading");
+
+        const routeError =
+                document.getElementById("routeError");
+
+        const routeResult =
+                document.getElementById("routeResult");
+
+        const routeResultTitle =
+                document.getElementById("routeResultTitle");
+
+        const routeStartAddress =
+                document.getElementById("routeStartAddress");
+
+        const routeDestinationAddress =
+                document.getElementById("routeDestinationAddress");
+
+        const routeDistance =
+                document.getElementById("routeDistance");
+
+        const routeDuration =
+                document.getElementById("routeDuration");
+
+        const transitExtraInfo =
+                document.getElementById("transitExtraInfo");
+
+        const routeTransitType =
+                document.getElementById("routeTransitType");
+
+        const routeTransfers =
+                document.getElementById("routeTransfers");
+
+        const routeFare =
+                document.getElementById("routeFare");
+
+        const routeDetailLink =
+                document.getElementById("routeDetailLink");
+
+
+
+        /* =========================================
+         * 지도 관련 변수
+         * ========================================= */
+
+        let map = null;
+
+        let destinationPosition = null;
+
+        let destinationMarker = null;
+
+        let destinationInfoWindow = null;
+
+        let startMarker = null;
+
+        let startInfoWindow = null;
+
+        let selectedPlace = null;
+
+        let routePolyline = null;
+
+
+
+        /* =========================================
+         * 카카오 지도 생성
+         * ========================================= */
+
+        if (typeof kakao === "undefined"
+                || !kakao.maps) {
+
+
+            mapError.style.display =
+                    "block";
+
+
+            mapError.textContent =
+                    "카카오맵을 불러오지 못했습니다.";
+
+
+        } else {
+
+
+            map =
+                    new kakao.maps.Map(
+
+                        mapContainer,
+
+                        {
+                            center:
+                                new kakao.maps.LatLng(
+                                    37.5665,
+                                    126.9780
+                                ),
+
+                            level:
+                                4
+                        }
+                    );
+
+
+            const geocoder =
+                    new kakao.maps.services.Geocoder();
+
+
+
+            /*
+             * DB에 저장된 클래스 주소를
+             * 위도/경도로 변환
+             */
+            geocoder.addressSearch(
+
+                classAddress,
+
+                function (
+                        result,
+                        status) {
+
+
+                    if (status
+                            === kakao.maps.services.Status.OK) {
+
+
+                        const latitude =
+                                result[0].y;
+
+
+                        const longitude =
+                                result[0].x;
+
+
+                        destinationPosition =
+                                new kakao.maps.LatLng(
+                                    latitude,
+                                    longitude
+                                );
+
+
+                        /*
+                         * 목적지 마커
+                         */
+                        destinationMarker =
+                                new kakao.maps.Marker({
+
+                                    map:
+                                        map,
+
+                                    position:
+                                        destinationPosition
+                                });
+
+
+                        /*
+                         * 목적지 정보창
+                         */
+                        destinationInfoWindow =
+                                new kakao.maps.InfoWindow({
+
+                                    content:
+                                        '<div style="padding:8px 12px; white-space:nowrap;">'
+                                        + '도착: '
+                                        + escapeHtml(classTitle)
+                                        + '</div>'
+                                });
+
+
+                        destinationInfoWindow.open(
+                            map,
+                            destinationMarker
+                        );
+
+
+                        map.setCenter(
+                            destinationPosition
+                        );
+
+
+                        /*
+                         * 카카오맵 외부 길찾기 링크
+                         */
+                        kakaoMapLink.href =
+
+                                "https://map.kakao.com/link/to/"
+
+                                + encodeURIComponent(
+                                    classTitle
+                                )
+
+                                + ","
+
+                                + latitude
+
+                                + ","
+
+                                + longitude;
+
+
+                        kakaoMapLink.style.display =
+                                "inline-flex";
+
+
+                    } else {
+
+
+                        /*
+                         * 주소 검색 실패 시
+                         * 장소 키워드 검색
+                         */
+                        const places =
+                                new kakao.maps.services.Places();
+
+
+                        places.keywordSearch(
+
+                            classAddress,
+
+                            function (
+                                    data,
+                                    placeStatus) {
+
+
+                                if (placeStatus
+                                        === kakao.maps.services.Status.OK
+                                        && data.length > 0) {
+
+
+                                    const latitude =
+                                            data[0].y;
+
+
+                                    const longitude =
+                                            data[0].x;
+
+
+                                    destinationPosition =
+                                            new kakao.maps.LatLng(
+                                                latitude,
+                                                longitude
+                                            );
+
+
+                                    destinationMarker =
+                                            new kakao.maps.Marker({
+
+                                                map:
+                                                    map,
+
+                                                position:
+                                                    destinationPosition
+                                            });
+
+
+                                    destinationInfoWindow =
+                                            new kakao.maps.InfoWindow({
+
+                                                content:
+                                                    '<div style="padding:8px 12px; white-space:nowrap;">'
+                                                    + '도착: '
+                                                    + escapeHtml(classTitle)
+                                                    + '</div>'
+                                            });
+
+
+                                    destinationInfoWindow.open(
+                                        map,
+                                        destinationMarker
+                                    );
+
+
+                                    map.setCenter(
+                                        destinationPosition
+                                    );
+
+
+                                    kakaoMapLink.href =
+
+                                            "https://map.kakao.com/link/to/"
+
+                                            + encodeURIComponent(
+                                                classTitle
+                                            )
+
+                                            + ","
+
+                                            + latitude
+
+                                            + ","
+
+                                            + longitude;
+
+
+                                    kakaoMapLink.style.display =
+                                            "inline-flex";
+
+
+                                } else {
+
+
+                                    mapError.style.display =
+                                            "block";
+
+
+                                    mapError.textContent =
+                                            "클래스 장소를 지도에서 찾지 못했습니다.";
+                                }
+                            }
+                        );
+                    }
+                }
+            );
+        }
+
+
+
+        /* =========================================
+         * 장소 검색
+         * ========================================= */
+
+        placeSearchButton.addEventListener(
+
+            "click",
+
+            function () {
+
+
+                const keyword =
+                        placeKeyword
+                            .value
+                            .trim();
+
+
+                if (keyword === "") {
+
+
+                    placeSearchError.style.display =
+                            "block";
+
+
+                    placeSearchError.textContent =
+                            "검색할 장소를 입력해주세요.";
+
+
+                    return;
+                }
+
+
+                placeSearchError.style.display =
+                        "none";
+
+
+                placeSearchResult.style.display =
+                        "none";
+
+
+                selectedPlaceArea.style.display =
+                        "none";
+
+
+                routeResult.style.display =
+                        "none";
+
+
+                routeError.style.display =
+                        "none";
+
+
+                selectedPlace =
+                        null;
+
+
+                clearRoutePolyline();
+
+
+                placeSearchLoading.style.display =
+                        "block";
+
+
+                fetch(
+
+                    "/map/search?keyword="
+
+                    + encodeURIComponent(
+                        keyword
+                    )
+                )
+
+                .then(
+                    function (response) {
+
+
+                        if (!response.ok) {
+
+
+                            throw new Error(
+                                "장소 검색 실패"
+                            );
+                        }
+
+
+                        return response.json();
+                    }
+                )
+
+                .then(
+                    function (places) {
+
+
+                        placeResultList.innerHTML =
+                                "";
+
+
+                        if (!places
+                                || places.length === 0) {
+
+
+                            placeSearchError.style.display =
+                                    "block";
+
+
+                            placeSearchError.textContent =
+                                    "검색된 장소가 없습니다.";
+
+
+                            return;
+                        }
+
+
+                        placeSearchResult.style.display =
+                                "block";
+
+
+                        places.forEach(
+
+                            function (place) {
+
+
+                                const item =
+                                        document.createElement(
+                                            "div"
+                                        );
+
+
+                                item.style.padding =
+                                        "16px";
+
+
+                                item.style.marginBottom =
+                                        "10px";
+
+
+                                item.style.border =
+                                        "1px solid #ddd";
+
+
+                                item.style.borderRadius =
+                                        "12px";
+
+
+                                const address =
+                                        place.roadAddressName
+                                        ||
+                                        place.addressName
+                                        ||
+                                        "";
+
+
+                                const nameElement =
+                                        document.createElement(
+                                            "strong"
+                                        );
+
+
+                                nameElement.textContent =
+                                        place.placeName;
+
+
+                                const addressElement =
+                                        document.createElement(
+                                            "p"
+                                        );
+
+
+                                addressElement.className =
+                                        "form-help";
+
+
+                                addressElement.style.margin =
+                                        "6px 0";
+
+
+                                addressElement.textContent =
+                                        address;
+
+
+                                const categoryElement =
+                                        document.createElement(
+                                            "p"
+                                        );
+
+
+                                categoryElement.className =
+                                        "form-help";
+
+
+                                categoryElement.style.margin =
+                                        "0";
+
+
+                                categoryElement.textContent =
+                                        place.categoryName
+                                        || "";
+
+
+                                const selectButton =
+                                        document.createElement(
+                                            "button"
+                                        );
+
+
+                                selectButton.type =
+                                        "button";
+
+
+                                selectButton.className =
+                                        "btn btn-outline btn-sm";
+
+
+                                selectButton.style.marginTop =
+                                        "10px";
+
+
+                                selectButton.textContent =
+                                        "이 장소 선택";
+
+
+
+                                selectButton.addEventListener(
+
+                                    "click",
+
+                                    function () {
+
+
+                                        selectedPlace =
+                                                place;
+
+
+                                        selectedPlaceName.textContent =
+                                                place.placeName;
+
+
+                                        selectedPlaceAddress.textContent =
+                                                address;
+
+
+                                        selectedPlaceArea.style.display =
+                                                "block";
+
+
+                                        routeResult.style.display =
+                                                "none";
+
+
+                                        routeError.style.display =
+                                                "none";
+
+
+                                        clearRoutePolyline();
+
+
+
+                                        /*
+                                         * 선택한 출발지 마커
+                                         */
+                                        const startPosition =
+                                                new kakao.maps.LatLng(
+                                                    place.latitude,
+                                                    place.longitude
+                                                );
+
+
+                                        if (startMarker !== null) {
+
+
+                                            startMarker.setMap(
+                                                null
+                                            );
+                                        }
+
+
+                                        if (startInfoWindow !== null) {
+
+
+                                            startInfoWindow.close();
+                                        }
+
+
+                                        startMarker =
+                                                new kakao.maps.Marker({
+
+                                                    map:
+                                                        map,
+
+                                                    position:
+                                                        startPosition
+                                                });
+
+
+                                        startInfoWindow =
+                                                new kakao.maps.InfoWindow({
+
+                                                    content:
+                                                        '<div style="padding:8px 12px; white-space:nowrap;">'
+                                                        + '출발: '
+                                                        + escapeHtml(
+                                                            place.placeName
+                                                        )
+                                                        + '</div>'
+                                                });
+
+
+                                        startInfoWindow.open(
+                                            map,
+                                            startMarker
+                                        );
+
+
+
+                                        /*
+                                         * 출발지 + 도착지
+                                         * 한 화면에 보이게 조절
+                                         */
+                                        if (destinationPosition
+                                                !== null) {
+
+
+                                            const bounds =
+                                                    new kakao.maps.LatLngBounds();
+
+
+                                            bounds.extend(
+                                                startPosition
+                                            );
+
+
+                                            bounds.extend(
+                                                destinationPosition
+                                            );
+
+
+                                            map.setBounds(
+                                                bounds
+                                            );
+                                        }
+
+
+                                        selectedPlaceArea
+                                            .scrollIntoView({
+
+                                                behavior:
+                                                    "smooth",
+
+                                                block:
+                                                    "nearest"
+                                            });
+                                    }
+                                );
+
+
+                                item.appendChild(
+                                    nameElement
+                                );
+
+
+                                item.appendChild(
+                                    addressElement
+                                );
+
+
+                                item.appendChild(
+                                    categoryElement
+                                );
+
+
+                                item.appendChild(
+                                    selectButton
+                                );
+
+
+                                placeResultList.appendChild(
+                                    item
+                                );
+                            }
+                        );
+                    }
+                )
+
+                .catch(
+                    function (error) {
+
+
+                        console.error(
+                            error
+                        );
+
+
+                        placeSearchError.style.display =
+                                "block";
+
+
+                        placeSearchError.textContent =
+                                "장소 검색 중 오류가 발생했습니다.";
+                    }
+                )
+
+                .finally(
+                    function () {
+
+
+                        placeSearchLoading.style.display =
+                                "none";
+                    }
+                );
+            }
+        );
+
+
+
+        /* Enter로 장소 검색 */
+        placeKeyword.addEventListener(
+
+            "keydown",
+
+            function (event) {
+
+
+                if (event.key === "Enter") {
+
+
+                    event.preventDefault();
+
+
+                    placeSearchButton.click();
+                }
+            }
+        );
+
+
+
+        /* =========================================
+         * 경로 조회
+         * ========================================= */
+
+        function loadRoute(
+                routeType) {
+
+
+            if (selectedPlace === null) {
+
+
+                routeError.style.display =
+                        "block";
+
+
+                routeError.textContent =
+                        "출발지를 먼저 선택해주세요.";
+
+
+                return;
+            }
+
+
+            routeError.style.display =
+                    "none";
+
+
+            routeResult.style.display =
+                    "none";
+
+
+            routeLoading.style.display =
+                    "block";
+
+
+            walkingRouteButton.disabled =
+                    true;
+
+
+            transitRouteButton.disabled =
+                    true;
+
+
+            bicycleRouteButton.disabled =
+                    true;
+
+
+            updateRouteButtonStyle(
+                routeType
+            );
+
+
+            let endpoint;
+
+
+            if (routeType === "WALK") {
+
+
+                endpoint =
+                        "/map/shortest-route";
+
+
+            } else if (routeType === "TRANSIT") {
+
+
+                endpoint =
+                        "/map/public-transit";
+
+
+            } else {
+
+
+                endpoint =
+                        "/map/bicycle";
+            }
+
+
+            const requestUrl =
+
+                    endpoint
+
+                    + "?startName="
+                    + encodeURIComponent(
+                        selectedPlace.placeName
+                    )
+
+                    + "&startLongitude="
+                    + selectedPlace.longitude
+
+                    + "&startLatitude="
+                    + selectedPlace.latitude
+
+                    + "&classId="
+                    + classId;
+
+
+            fetch(
+                requestUrl
+            )
+
+            .then(
+                function (response) {
+
+
+                    if (!response.ok) {
+
+
+                        throw new Error(
+                            "경로 조회 실패"
+                        );
+                    }
+
+
+                    return response.json();
+                }
+            )
+
+            .then(
+                function (data) {
+
+
+                    routeStartAddress.textContent =
+                            data.startAddress;
+
+
+                    routeDestinationAddress.textContent =
+                            data.destinationAddress;
+
+
+                    routeDistance.textContent =
+                            data.distanceKm
+                            + " km";
+
+
+                    routeDuration.textContent =
+                            "약 "
+                            + data.durationMinutes
+                            + "분";
+
+
+
+                    /* 도보 */
+                    if (data.routeType === "WALK") {
+
+
+                        routeResultTitle.textContent =
+                                "도보 최단경로";
+
+
+                        transitExtraInfo.style.display =
+                                "none";
+
+
+                    /* 대중교통 */
+                    } else if (data.routeType === "TRANSIT") {
+
+
+                        routeResultTitle.textContent =
+                                "대중교통 경로";
+
+
+                        transitExtraInfo.style.display =
+                                "block";
+
+
+                        routeTransitType.textContent =
+                                convertTransitType(
+                                    data.transitType
+                                );
+
+
+                        routeTransfers.textContent =
+                                data.transfers
+                                + "회";
+
+
+                        if (data.fare > 0) {
+
+
+                            routeFare.textContent =
+                                    Number(
+                                        data.fare
+                                    )
+                                    .toLocaleString(
+                                        "ko-KR"
+                                    )
+                                    + "원";
+
+
+                        } else {
+
+
+                            routeFare.textContent =
+                                    "정보 없음";
+                        }
+
+
+                    /* 자전거 */
+                    } else {
+
+
+                        routeResultTitle.textContent =
+                                "자전거 최단경로";
+
+
+                        transitExtraInfo.style.display =
+                                "none";
+                    }
+
+
+
+                    /*
+                     * 실제 경로 좌표가 있으면
+                     * 지도 위에 Polyline 표시
+                     */
+                    if (data.routePoints
+                            && data.routePoints.length > 0) {
+
+
+                        drawRoutePolyline(
+                            data.routePoints
+                        );
+
+
+                    } else {
+
+
+                        clearRoutePolyline();
+                    }
+
+
+
+                    /*
+                     * 상세 경로 링크
+                     */
+                    if (data.landingUrl
+                            && data.landingUrl !== "") {
+
+
+                        routeDetailLink.href =
+                                data.landingUrl;
+
+
+                        routeDetailLink.style.display =
+                                "inline-flex";
+
+
+                    } else {
+
+
+                        routeDetailLink.style.display =
+                                "none";
+                    }
+
+
+                    routeResult.style.display =
+                            "block";
+
+
+                    routeResult.scrollIntoView({
+
+                        behavior:
+                            "smooth",
+
+                        block:
+                            "nearest"
+                    });
+                }
+            )
+
+            .catch(
+                function (error) {
+
+
+                    console.error(
+                        error
+                    );
+
+
+                    routeError.style.display =
+                            "block";
+
+
+                    if (routeType === "WALK") {
+
+
+                        routeError.textContent =
+                                "도보로 이동 가능한 경로를 찾지 못했습니다.";
+
+
+                    } else if (routeType === "TRANSIT") {
+
+
+                        routeError.textContent =
+                                "해당 구간의 대중교통 경로를 찾지 못했습니다.";
+
+
+                    } else {
+
+
+                        routeError.textContent =
+                                "자전거로 이동 가능한 경로를 찾지 못했습니다.";
+                    }
+                }
+            )
+
+            .finally(
+                function () {
+
+
+                    routeLoading.style.display =
+                            "none";
+
+
+                    enableRouteButtons();
+                }
+            );
+        }
+
+
+
+        /* =========================================
+         * 실제 경로선
+         * ========================================= */
+
+        function drawRoutePolyline(
+                routePoints) {
+
+
+            clearRoutePolyline();
+
+
+            if (!routePoints
+                    || routePoints.length === 0) {
+
+
+                return;
+            }
+
+
+            const path =
+                    [];
+
+
+            const bounds =
+                    new kakao.maps.LatLngBounds();
+
+
+            routePoints.forEach(
+
+                function (point) {
+
+
+                    if (!point
+                            || point.length < 2) {
+
+
+                        return;
+                    }
+
+
+                    /*
+                     * Java:
+                     *
+                     * point[0] = 경도
+                     * point[1] = 위도
+                     */
+                    const longitude =
+                            point[0];
+
+
+                    const latitude =
+                            point[1];
+
+
+                    /*
+                     * Kakao:
+                     *
+                     * LatLng(위도, 경도)
+                     */
+                    const position =
+                            new kakao.maps.LatLng(
+                                latitude,
+                                longitude
+                            );
+
+
+                    path.push(
+                        position
+                    );
+
+
+                    bounds.extend(
+                        position
+                    );
+                }
+            );
+
+
+            if (path.length === 0) {
+
+
+                return;
+            }
+
+
+            routePolyline =
+                    new kakao.maps.Polyline({
+
+                        path:
+                            path,
+
+                        strokeWeight:
+                            6,
+
+                        strokeColor:
+                            "#087f5b",
+
+                        strokeOpacity:
+                            0.85,
+
+                        strokeStyle:
+                            "solid"
+                    });
+
+
+            routePolyline.setMap(
+                map
+            );
+
+
+            if (selectedPlace !== null) {
+
+
+                bounds.extend(
+
+                    new kakao.maps.LatLng(
+                        selectedPlace.latitude,
+                        selectedPlace.longitude
+                    )
+                );
+            }
+
+
+            if (destinationPosition !== null) {
+
+
+                bounds.extend(
+                    destinationPosition
+                );
+            }
+
+
+            /*
+             * 경로 전체가 지도에 보이도록 조정
+             */
+            map.setBounds(
+                bounds
+            );
+        }
+
+
+
+        /* 기존 경로선 삭제 */
+        function clearRoutePolyline() {
+
+
+            if (routePolyline !== null) {
+
+
+                routePolyline.setMap(
+                    null
+                );
+
+
+                routePolyline =
+                        null;
+            }
+        }
+
+
+
+        /* 경로 버튼 다시 활성화 */
+        function enableRouteButtons() {
+
+
+            walkingRouteButton.disabled =
+                    false;
+
+
+            transitRouteButton.disabled =
+                    false;
+
+
+            bicycleRouteButton.disabled =
+                    false;
+        }
+
+
+
+        /* 선택한 경로 버튼 강조 */
+        function updateRouteButtonStyle(
+                routeType) {
+
+
+            walkingRouteButton.classList.remove(
+                "btn-primary"
+            );
+
+
+            walkingRouteButton.classList.add(
+                "btn-outline"
+            );
+
+
+            transitRouteButton.classList.remove(
+                "btn-primary"
+            );
+
+
+            transitRouteButton.classList.add(
+                "btn-outline"
+            );
+
+
+            bicycleRouteButton.classList.remove(
+                "btn-primary"
+            );
+
+
+            bicycleRouteButton.classList.add(
+                "btn-outline"
+            );
+
+
+            if (routeType === "WALK") {
+
+
+                walkingRouteButton.classList.remove(
+                    "btn-outline"
+                );
+
+
+                walkingRouteButton.classList.add(
+                    "btn-primary"
+                );
+
+
+            } else if (routeType === "TRANSIT") {
+
+
+                transitRouteButton.classList.remove(
+                    "btn-outline"
+                );
+
+
+                transitRouteButton.classList.add(
+                    "btn-primary"
+                );
+
+
+            } else if (routeType === "BICYCLE") {
+
+
+                bicycleRouteButton.classList.remove(
+                    "btn-outline"
+                );
+
+
+                bicycleRouteButton.classList.add(
+                    "btn-primary"
+                );
+            }
+        }
+
+
+
+        /* 도보 */
+        walkingRouteButton.addEventListener(
+
+            "click",
+
+            function () {
+
+
+                loadRoute(
+                    "WALK"
+                );
+            }
+        );
+
+
+
+        /* 대중교통 */
+        transitRouteButton.addEventListener(
+
+            "click",
+
+            function () {
+
+
+                loadRoute(
+                    "TRANSIT"
+                );
+            }
+        );
+
+
+
+        /* 자전거 */
+        bicycleRouteButton.addEventListener(
+
+            "click",
+
+            function () {
+
+
+                loadRoute(
+                    "BICYCLE"
+                );
+            }
+        );
+
+
+
+        /* 대중교통 종류 한글 변환 */
+        function convertTransitType(
+                type) {
+
+
+            if (type === "BUS") {
+
+
+                return "버스";
+            }
+
+
+            if (type === "SUBWAY") {
+
+
+                return "지하철";
+            }
+
+
+            if (type === "BUS_AND_SUBWAY") {
+
+
+                return "버스 + 지하철";
+            }
+
+
+            return type
+                    || "대중교통";
+        }
+
+
+
+        /* HTML Escape */
+        function escapeHtml(
+                text) {
+
+
+            const div =
+                    document.createElement(
+                        "div"
+                    );
+
+
+            div.textContent =
+                    text || "";
+
+
+            return div.innerHTML;
+        }
+
+    }
+);
+
+
+
+/*
+ * S3 썸네일 클릭 시
+ * 큰 대표 이미지 변경
+ */
+function changeMainImage(
+        imageUrl) {
+
+
+    const mainImage =
+            document.getElementById(
+                "mainClassImage"
+            );
+
+
+    if (mainImage !== null) {
+
+
+        mainImage.src =
+                imageUrl;
+    }
+}
+
+</script>
+
+</body>
+</html>

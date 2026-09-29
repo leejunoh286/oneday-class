@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+
+    <!-- =========================================
+         카테고리 이름
+         ========================================= -->
+
+    <span th:fragment="categoryName(id)"
+          th:text="${id == 1 ? '테니스'
+          : id == 2 ? '풋살'
+          : id == 3 ? '농구'
+          : id == 4 ? '러닝'
+          : id == 5 ? '헬스'
+          : id == 6 ? '배드민턴'
+          : id == 7 ? '골프'
+          : id == 8 ? '수영'
+          : id == 9 ? '복싱'
+          : id == 10 ? '야구'
+          : '기타'}">
+
+        카테고리
+
+    </span>
+
+
+    <!-- =========================================
+         클래스 상태
+         ========================================= -->
+
+    <span th:fragment="classStatus(status)"
+          class="status-badge"
+          th:attr="data-status=${status}"
+          th:text="${status == 'RECRUITING'
+          ? '모집 중'
+          : status == 'CLOSED'
+          ? '모집 마감'
+          : '종료'}">
+
+        모집 중
+
+    </span>
+
+
+    <!-- =========================================
+         신청 상태
+         ========================================= -->
+
+    <span th:fragment="applicationStatus(status)"
+          class="status-badge"
+          th:attr="data-status=${status}"
+          th:text="${status == 'PENDING'
+          ? '승인 대기'
+          : status == 'APPROVED'
+          ? '승인 완료'
+          : status == 'REJECTED'
+          ? '거절'
+          : status == 'CANCELLED'
+          ? '신청 취소'
+          : '수강 완료'}">
+
+        승인 대기
+
+    </span>
+
+
+    <!-- =========================================
+         클래스 이미지 / 장식 영역
+         ========================================= -->
+
+    <div th:fragment="art(categoryId)"
+         class="class-art"
+         th:attr="data-category=${categoryId}"
+         aria-hidden="true">
+
+        <i></i>
+        <b></b>
+        <span></span>
+
+    </div>
+
+
+    <!-- =========================================
+         클래스 카드
+         ========================================= -->
+
+    <article th:fragment="card(item, thumbnailUrl)"
+             class="class-card">
+
+        <a class="class-card-link"
+           th:href="@{/class/detail(classId=${item.classId})}">
+
+
+            <!-- =====================================
+                 대표 S3 이미지가 있는 경우
+                 ===================================== -->
+
+            <th:block th:if="${thumbnailUrl != null}">
+
+                <img th:src="${thumbnailUrl}"
+                     th:alt="${item.title}"
+                     style="
+                        width:100%;
+                        height:220px;
+                        object-fit:cover;
+                        display:block;
+                     ">
+
+            </th:block>
+
+
+            <!-- =====================================
+                 대표 이미지가 없는 경우
+                 기존 카테고리 art 표시
+                 ===================================== -->
+
+            <th:block th:if="${thumbnailUrl == null}">
+
+                <div th:replace="~{fragments/components :: art(${item.categoryId})}">
+                </div>
+
+            </th:block>
+
+
+            <div class="class-card-body">
+
+
+                <!-- 카테고리 -->
+                <span class="eyebrow">
+
+                    <span th:replace="~{fragments/components :: categoryName(${item.categoryId})}">
+                    </span>
+
+                </span>
+
+
+                <!-- 제목 -->
+                <h3 th:text="${item.title}">
+                    클래스 제목
+                </h3>
+
+
+                <!-- 개설자 -->
+                <p class="form-help">
+
+                    개설자:
+
+                    <strong th:text="${item.hostNickname}">
+                        닉네임
+                    </strong>
+
+                    (
+
+                    <span th:text="${item.hostLoginId}">
+                        아이디
+                    </span>
+
+                    )
+
+                </p>
+
+
+                <!-- 장소 / 날짜 -->
+                <div class="card-meta">
+
+                    <span th:text="${item.location}">
+                        장소
+                    </span>
+
+
+                    <time th:text="${#temporals.format(
+                            item.classDate,
+                            'yyyy. MM. dd. HH:mm'
+                    )}">
+                        진행 일시
+                    </time>
+
+                </div>
+
+
+                <!-- 가격 / 모집 상태 -->
+                <div class="card-bottom">
+
+                    <strong class="price"
+                            th:text="${item.price == 0
+                            ? '무료'
+                            : #numbers.formatInteger(
+                                item.price,
+                                1,
+                                'COMMA'
+                              ) + '원'}">
+
+                        가격
+
+                    </strong>
+
+
+                    <span th:replace="~{fragments/components :: classStatus(${item.status})}">
+                    </span>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </article>
+
+
+    <!-- =========================================
+         메인 카테고리 목록
+         ========================================= -->
+
+    <div th:fragment="categories"
+         class="category-grid"
+         aria-label="클래스 카테고리">
+
+
+        <a th:each="id : ${#numbers.sequence(1,10)}"
+           th:href="@{/class/list(categoryId=${id})}"
+           class="category-tile"
+           th:attr="data-category=${id}">
+
+
+            <span class="category-dot"
+                  aria-hidden="true">
+            </span>
+
+
+            <span th:replace="~{fragments/components :: categoryName(${id})}">
+            </span>
+
+
+            <span class="category-arrow"
+                  aria-hidden="true">
+                ↗
+            </span>
+
+        </a>
+
+    </div>
+
+
+    <!-- =========================================
+         등록 / 수정 카테고리 select
+         ========================================= -->
+
+    <th:block th:fragment="categoryOptions">
+
+        <option value="">
+            카테고리를 선택해주세요
+        </option>
+
+
+        <option value="1">
+            테니스
+        </option>
+
+        <option value="2">
+            풋살
+        </option>
+
+        <option value="3">
+            농구
+        </option>
+
+        <option value="4">
+            러닝
+        </option>
+
+        <option value="5">
+            헬스
+        </option>
+
+        <option value="6">
+            배드민턴
+        </option>
+
+        <option value="7">
+            골프
+        </option>
+
+        <option value="8">
+            수영
+        </option>
+
+        <option value="9">
+            복싱
+        </option>
+
+        <option value="10">
+            야구
+        </option>
+
+    </th:block>
+
+
+</body>
+</html>

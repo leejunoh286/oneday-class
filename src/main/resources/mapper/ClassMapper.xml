@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.onedayclass.mapper.ClassMapper">
+
+    <!-- 클래스 등록 -->
+    <insert id="insertClass"
+            parameterType="kr.or.oti.onedayclass.vo.ClassVO"
+            useGeneratedKeys="true"
+            keyProperty="classId">
+
+        INSERT INTO class_post (
+            host_id,
+            category_id,
+            title,
+            description,
+            price,
+            capacity,
+            class_date,
+            deadline,
+            location,
+            status
+        )
+        VALUES (
+            #{hostId},
+            #{categoryId},
+            #{title},
+            #{description},
+            #{price},
+            #{capacity},
+            #{classDate},
+            #{deadline},
+            #{location},
+            #{status}
+        )
+
+    </insert>
+
+
+    <!-- 클래스 전체 목록 조회 -->
+    <select id="selectClassList"
+	        resultType="kr.or.oti.onedayclass.vo.ClassVO">
+	
+	    SELECT
+	        cp.class_id AS classId,
+	        cp.host_id AS hostId,
+	
+	        m.login_id AS hostLoginId,
+	        m.nickname AS hostNickname,
+	
+	        cp.category_id AS categoryId,
+	        cp.title,
+	        cp.description,
+	        cp.price,
+	        cp.capacity,
+	        cp.class_date AS classDate,
+	        cp.deadline,
+	        cp.location,
+	        cp.status,
+	        cp.view_count AS viewCount,
+	        cp.created_at AS createdAt,
+	        cp.updated_at AS updatedAt
+	
+	    FROM class_post cp
+	
+	    INNER JOIN member m
+	        ON cp.host_id = m.member_id
+	
+	    ORDER BY cp.class_id DESC
+
+</select>
+
+
+    <!-- 클래스 검색 + 페이징 -->
+    <select id="selectClassListBySearch"
+        parameterType="kr.or.oti.onedayclass.dto.ClassSearchDTO"
+        resultType="kr.or.oti.onedayclass.vo.ClassVO">
+
+	    SELECT
+	        cp.class_id AS classId,
+	        cp.host_id AS hostId,
+	
+	        m.login_id AS hostLoginId,
+	        m.nickname AS hostNickname,
+	
+	        cp.category_id AS categoryId,
+	        cp.title,
+	        cp.description,
+	        cp.price,
+	        cp.capacity,
+	        cp.class_date AS classDate,
+	        cp.deadline,
+	        cp.location,
+	        cp.status,
+	        cp.view_count AS viewCount,
+	        cp.created_at AS createdAt,
+	        cp.updated_at AS updatedAt
+	
+	    FROM class_post cp
+	
+	    INNER JOIN member m
+	        ON cp.host_id = m.member_id
+	
+	    <where>
+	
+	        <if test="categoryId != null">
+	            AND cp.category_id = #{categoryId}
+	        </if>
+	
+	        <if test="keyword != null and keyword != ''">
+	
+	            <choose>
+	
+	                <when test="searchType == 'TITLE'">
+	                    AND cp.title LIKE CONCAT('%', #{keyword}, '%')
+	                </when>
+	
+	                <when test="searchType == 'CONTENT'">
+	                    AND cp.description LIKE CONCAT('%', #{keyword}, '%')
+	                </when>
+	
+	                <when test="searchType == 'TITLE_CONTENT'">
+	                    AND (
+	                        cp.title LIKE CONCAT('%', #{keyword}, '%')
+	                        OR
+	                        cp.description LIKE CONCAT('%', #{keyword}, '%')
+	                    )
+	                </when>
+	
+	                <otherwise>
+	                    AND (
+	                        cp.title LIKE CONCAT('%', #{keyword}, '%')
+	                        OR
+	                        cp.description LIKE CONCAT('%', #{keyword}, '%')
+	                    )
+	                </otherwise>
+	
+	            </choose>
+	
+	        </if>
+	
+	    </where>
+	
+	    ORDER BY cp.class_id DESC
+	
+	    LIMIT #{size}
+	    OFFSET #{offset}
+	
+	</select>
+
+
+    <!-- 클래스 검색 결과 전체 개수 -->
+    <select id="countClassListBySearch"
+            parameterType="kr.or.oti.onedayclass.dto.ClassSearchDTO"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM class_post
+
+        <where>
+
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+
+            <if test="keyword != null and keyword != ''">
+
+                <choose>
+
+                    <when test="searchType == 'TITLE'">
+                        AND title LIKE CONCAT('%', #{keyword}, '%')
+                    </when>
+
+                    <when test="searchType == 'CONTENT'">
+                        AND description LIKE CONCAT('%', #{keyword}, '%')
+                    </when>
+
+                    <when test="searchType == 'TITLE_CONTENT'">
+                        AND (
+                            title LIKE CONCAT('%', #{keyword}, '%')
+                            OR
+                            description LIKE CONCAT('%', #{keyword}, '%')
+                        )
+                    </when>
+
+                    <otherwise>
+                        AND (
+                            title LIKE CONCAT('%', #{keyword}, '%')
+                            OR
+                            description LIKE CONCAT('%', #{keyword}, '%')
+                        )
+                    </otherwise>
+
+                </choose>
+
+            </if>
+
+        </where>
+
+    </select>
+
+
+    <!-- 특정 회원이 개설한 클래스 목록 조회 -->
+    <select id="selectClassesByHostId"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassVO">
+
+        SELECT
+            class_id AS classId,
+            host_id AS hostId,
+            category_id AS categoryId,
+            title,
+            description,
+            price,
+            capacity,
+            class_date AS classDate,
+            deadline,
+            location,
+            status,
+            view_count AS viewCount,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM class_post
+        WHERE host_id = #{hostId}
+        ORDER BY class_id DESC
+
+    </select>
+
+
+    <!-- 클래스 상세 조회 -->
+	<select id="selectClassById"
+	        parameterType="long"
+	        resultType="kr.or.oti.onedayclass.vo.ClassVO">
+	
+	    SELECT
+	        cp.class_id AS classId,
+	        cp.host_id AS hostId,
+	
+	        m.login_id AS hostLoginId,
+	        m.nickname AS hostNickname,
+	
+	        cp.category_id AS categoryId,
+	        cp.title,
+	        cp.description,
+	        cp.price,
+	        cp.capacity,
+	        cp.class_date AS classDate,
+	        cp.deadline,
+	        cp.location,
+	        cp.status,
+	        cp.view_count AS viewCount,
+	        cp.created_at AS createdAt,
+	        cp.updated_at AS updatedAt
+	
+	    FROM class_post cp
+	
+	    INNER JOIN member m
+	        ON cp.host_id = m.member_id
+	
+	    WHERE cp.class_id = #{classId}
+	
+	</select>
+
+
+    <!-- 클래스 승인 처리용 잠금 조회 -->
+    <select id="selectClassByIdForUpdate"
+            parameterType="long"
+            resultType="kr.or.oti.onedayclass.vo.ClassVO">
+
+        SELECT
+            class_id AS classId,
+            host_id AS hostId,
+            category_id AS categoryId,
+            title,
+            description,
+            price,
+            capacity,
+            class_date AS classDate,
+            deadline,
+            location,
+            status,
+            view_count AS viewCount,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM class_post
+        WHERE class_id = #{classId}
+        FOR UPDATE
+
+    </select>
+
+
+    <!-- 모든 클래스 상태 갱신 -->
+    <update id="updateAllClassStatuses">
+
+        UPDATE class_post
+        SET status =
+            CASE
+                WHEN CURRENT_TIMESTAMP >= class_date
+                    THEN 'COMPLETED'
+
+                WHEN CURRENT_TIMESTAMP >= deadline
+                    THEN 'CLOSED'
+
+                ELSE 'RECRUITING'
+            END
+
+    </update>
+
+
+    <!-- 특정 클래스 상태 갱신 -->
+    <update id="updateClassStatus"
+            parameterType="long">
+
+        UPDATE class_post
+        SET status =
+            CASE
+                WHEN CURRENT_TIMESTAMP >= class_date
+                    THEN 'COMPLETED'
+
+                WHEN CURRENT_TIMESTAMP >= deadline
+                    THEN 'CLOSED'
+
+                ELSE 'RECRUITING'
+            END
+        WHERE class_id = #{classId}
+
+    </update>
+
+
+    <!-- 클래스 수정 -->
+    <update id="updateClass"
+            parameterType="kr.or.oti.onedayclass.vo.ClassVO">
+
+        UPDATE class_post
+        SET
+            category_id = #{categoryId},
+            title = #{title},
+            description = #{description},
+            price = #{price},
+            capacity = #{capacity},
+            class_date = #{classDate},
+            deadline = #{deadline},
+            location = #{location}
+        WHERE class_id = #{classId}
+
+    </update>
+
+
+    <!-- 클래스 삭제 -->
+    <delete id="deleteClass"
+            parameterType="long">
+
+        DELETE FROM class_post
+        WHERE class_id = #{classId}
+
+    </delete>
+    
+    
+    <!-- 클래스 상태 자동 변경 -->
+    <update id="closeExpiredRecruitingClasses">
+    	
+    	UPDATE class_post
+    	SET
+    		status = 'CLOSED',
+    		updated_at = NOW()
+    	WHERE status = 'RECRUITING'
+    	  AND deadline IS NOT NULL
+    	  AND deadline &lt;= NOW()
+    	  AND class_date > NOW()
+    </update>
+    
+    
+    <update id="completeExpiredClasses">
+    	
+    	UPDATE class_post
+    	SET
+    		status = 'COMPLETED',
+    		updated_at = NOW()
+    	WHERE status IN ('RECRUITING', 'CLOSED')
+    	  AND class_date IS NOT NULL
+    	  AND class_date &lt;= NOW()
+    </update>
+    
+    
+    <select id="countActiveHostedClasses"
+    		parameterType="long"
+    		resultType="int">
+		
+		SELECT COUNT(*)
+		FROM class_post
+		WHERE host_id = #{memberId}
+		  AND status IN ('RECRUITING', 'CLOSED')
+    </select>
+
+</mapper>
+
+
+
+
+
+
+
+
+

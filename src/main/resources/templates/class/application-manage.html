@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('신청자 관리')}"></head>
+<body>
+	<header th:replace="~{fragments/layout :: header}"></header>
+	<main id="main-content" class="shell page ">
+		<nav class="breadcrumb-line" aria-label="현재 위치">
+			<a th:href="@{/member/mypage}">마이페이지</a><span>/</span><a
+				th:href="@{/class/detail(classId=${classId})}">클래스 상세</a>
+		</nav>
+		<div class="section-heading">
+			<div class="page-heading">
+				<span class="eyebrow">MANAGE YOUR CLASS</span>
+				<h1>함께할 사람들</h1>
+				<p>
+					클래스 #<span th:text="${classId}"></span>의 신청자를 관리하세요.
+				</p>
+			</div>
+			<span class="status-badge">총 <span
+				th:text="${#lists.size(applicationList)}"></span>건
+			</span>
+		</div>
+		<p class="notice">승인 대기 중인 신청을 승인하거나 거절할 수 있어요. 승인한 참여자는 클래스 진행
+			일시가 지난 후 수강 완료 처리해주세요.</p>
+		<div class="section">
+			<div class="empty-state" th:if="${#lists.isEmpty(applicationList)}">
+				<span class="empty-symbol" aria-hidden="true">✦</span>
+				<h2>아직 신청자가 없어요</h2>
+				<p>함께할 새로운 인연을 기다리고 있어요.</p>
+				<a class="btn btn-soft"
+					th:href="@{/class/detail(classId=${classId})}">클래스 확인하기</a>
+			</div>
+			<article class="manage-card" th:each="app : ${applicationList}">
+				<div class="manage-head">
+					<div>
+						<small>신청 #<span th:text="${app.applicationId}"></span></small>
+						<h2>
+							회원 <span th:text="${app.memberId}"></span>
+						</h2>
+					</div>
+					<span
+						th:replace="~{fragments/components :: applicationStatus(${app.status})}"></span>
+				</div>
+				<dl class="timeline">
+					<div>
+						<dt>신청 일시</dt>
+						<dd
+							th:text="${app.appliedAt != null ? #temporals.format(app.appliedAt, 'yyyy. MM. dd. HH:mm') : '-'}"></dd>
+					</div>
+					<div>
+						<dt>승인 일시</dt>
+						<dd
+							th:text="${app.approvedAt != null ? #temporals.format(app.approvedAt, 'yyyy. MM. dd. HH:mm') : '-'}"></dd>
+					</div>
+					<div>
+						<dt>거절 일시</dt>
+						<dd
+							th:text="${app.rejectedAt != null ? #temporals.format(app.rejectedAt, 'yyyy. MM. dd. HH:mm') : '-'}"></dd>
+					</div>
+					<div>
+						<dt>취소 일시</dt>
+						<dd
+							th:text="${app.cancelledAt != null ? #temporals.format(app.cancelledAt, 'yyyy. MM. dd. HH:mm') : '-'}"></dd>
+					</div>
+					<div>
+						<dt>완료 일시</dt>
+						<dd
+							th:text="${app.completedAt != null ? #temporals.format(app.completedAt, 'yyyy. MM. dd. HH:mm') : '-'}"></dd>
+					</div>
+				</dl>
+				<div class="actions" th:if="${app.status == 'PENDING'}">
+					<form th:action="@{/class/application/approve}" method="post"
+						data-confirm="승인 처리할까요?">
+						<input type="hidden" name="applicationId"
+							th:value="${app.applicationId}"><input type="hidden"
+							name="classId" th:value="${classId}">
+						<button type="submit" class="btn btn-primary btn-sm">승인</button>
+					</form>
+					<form th:action="@{/class/application/reject}" method="post"
+						data-confirm="거절 처리할까요?">
+						<input type="hidden" name="applicationId"
+							th:value="${app.applicationId}"><input type="hidden"
+							name="classId" th:value="${classId}">
+						<button type="submit" class="btn btn-danger-soft btn-sm">거절</button>
+					</form>
+				</div>
+				<div class="actions" th:if="${app.status == 'APPROVED'}">
+					<form th:action="@{/class/application/complete}" method="post"
+						data-confirm="수강 완료 처리할까요?">
+						<input type="hidden" name="applicationId"
+							th:value="${app.applicationId}"><input type="hidden"
+							name="classId" th:value="${classId}">
+						<button type="submit" class="btn btn-primary btn-sm">수강
+							완료</button>
+					</form>
+				</div>
+			</article>
+		</div>
+	</main>
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
+

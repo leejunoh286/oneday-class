@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.onedayclass.mapper.MemberMapper">
+
+
+    <!-- =====================================================
+         회원가입
+         ===================================================== -->
+    <insert id="insertMember"
+            parameterType="kr.or.oti.onedayclass.vo.MemberVO"
+            useGeneratedKeys="true"
+            keyProperty="memberId">
+
+        INSERT INTO member (
+            role_id,
+            login_id,
+            password,
+            name,
+            nickname,
+            email,
+            phone
+        )
+        VALUES (
+            #{roleId},
+            #{loginId},
+            #{password},
+            #{name},
+            #{nickname},
+            #{email},
+            #{phone}
+        )
+
+    </insert>
+
+
+
+    <!-- =====================================================
+         로그인 아이디로 회원 조회
+         ===================================================== -->
+    <select id="selectByLoginId"
+            parameterType="string"
+            resultType="kr.or.oti.onedayclass.vo.MemberVO">
+
+        SELECT
+            member_id AS memberId,
+            role_id AS roleId,
+            login_id AS loginId,
+            password,
+            name,
+            nickname,
+            email,
+            phone,
+            withdrawn,
+            withdrawn_at AS withdrawnAt,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM member
+        WHERE login_id = #{loginId}
+          AND withdrawn = 0
+
+    </select>
+    
+    
+    <!-- =====================================================
+     	 회원 ID로 회원 조회
+    	 ===================================================== -->
+	<select id="selectByMemberId"
+			parameterType="long"
+			resultType="kr.or.oti.onedayclass.vo.MemberVO">
+		
+		SELECT
+			member_id AS memberId,
+			role_id AS roleId,
+			login_id AS loginId,
+			password,
+			name,
+			nickname,
+			email,
+			phone,
+			withdrawn,
+			withdrawn_at AS withdrawnAt,
+			created_at AS createdAt,
+			updated_at AS updatedAt
+		FROM member
+		WHERE member_id = #{memberId}
+		  AND withdrawn = 0
+	</select>
+
+
+    <!-- =====================================================
+         아이디 중복 검사
+         ===================================================== -->
+    <select id="countByLoginId"
+            parameterType="string"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM member
+        WHERE login_id = #{loginId}
+
+    </select>
+
+
+
+    <!-- =====================================================
+         닉네임 중복 검사
+         ===================================================== -->
+    <select id="countByNickname"
+            parameterType="string"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM member
+        WHERE nickname = #{nickname}
+
+    </select>
+
+
+
+    <!-- =====================================================
+         이메일 중복 검사
+         ===================================================== -->
+    <select id="countByEmail"
+            parameterType="string"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM member
+        WHERE email = #{email}
+
+    </select>
+
+
+
+    <!-- =====================================================
+         ROLE 이름으로 role_id 조회
+         ===================================================== -->
+    <select id="selectRoleIdByRoleName"
+            parameterType="string"
+            resultType="int">
+
+        SELECT role_id
+        FROM role
+        WHERE role_name = #{roleName}
+
+    </select>
+
+
+
+    <!-- =====================================================
+         role_id로 ROLE 이름 조회
+         ===================================================== -->
+    <select id="selectRoleNameByRoleId"
+            parameterType="int"
+            resultType="string">
+
+        SELECT role_name
+        FROM role
+        WHERE role_id = #{roleId}
+
+    </select>
+    
+    
+    <!-- =====================================================
+     	 회원정보 수정
+     	 ===================================================== -->
+	<update id="updateMember"
+	 	    parameterType="kr.or.oti.onedayclass.vo.MemberVO">
+		
+		UPDATE member
+		SET
+			name = #{name},
+			nickname = #{nickname},
+			email = #{email},
+			phone = #{phone},
+			updated_at = NOW()
+		
+		WHERE member_id = #{memberId}
+		  AND withdrawn = 0 	    
+	</update>
+	
+	
+	<!-- =====================================================
+     	 비밀번호 변경
+     	 ===================================================== -->
+    <update id="updatePassword">
+    
+    	UPDATE member
+    	SET
+    		password = #{password},
+    		updated_at = NOW()
+    	
+    	WHERE member_id = #{memberId}
+    	  AND withdrawn = 0 
+    </update>
+
+
+    <!-- =====================================================
+         회원탈퇴
+         ===================================================== -->
+    <update id="withdrawMember"
+            parameterType="long">
+
+        UPDATE member
+
+        SET
+            login_id =
+                CONCAT('withdrawn_', member_id),
+
+            name =
+                '탈퇴회원',
+
+            nickname =
+                CONCAT('탈퇴회원', member_id),
+
+            email =
+                CONCAT(
+                    'withdrawn_',
+                    member_id,
+                    '@activeon.local'
+                ),
+
+            phone =
+                NULL,
+
+            password =
+                '',
+
+            withdrawn =
+                1,
+
+            withdrawn_at =
+                NOW(),
+
+            updated_at =
+                NOW()
+
+        WHERE member_id = #{memberId}
+          AND withdrawn = 0
+
+    </update>
+
+
+</mapper>
